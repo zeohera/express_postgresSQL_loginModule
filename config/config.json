@@ -1,0 +1,24 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "101120",
+    "database": "loginModule_dev",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "timezone": "+07:00"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "loginModule_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "loginModule_production",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+}
