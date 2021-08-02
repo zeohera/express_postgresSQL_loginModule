@@ -1,6 +1,8 @@
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const FacebookStrategy = require('passport-facebook').Strategy;
+const passport = require('passport')
 const { validationResult } = require("express-validator");
 const service = require("../services/user.service");
 const tokenService = require("../services/token.service");
@@ -18,19 +20,69 @@ function fullUrl(req, pathname, queryObj) {
   });
 }
 
+module.exports.passportAuthenticate = async (req, res, next) => {
+  try {
+    const callbackSecretUrl = fullUrl(req, 'auth/facebook/secret')
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FB_APP_ID,
+      clientSecret: process.env.FB_APP_SECRET,
+      callbackURL: callbackSecretUrl,
+      profileFields: ['id', 'emails', 'name']
+      },
+      function (accessToken, refreshToken, profile, cb) {
+        console.log(`fb token \n${accessToken}`)
+        var user = profile._json;
+        var err, user = service.saveUserFacebook(user);
+        console.log(user)
+        return cb(err, user);
+    }));
+    passport.authenticate('facebook')
+    res.status(100).redirect(callbackSecretUrl)
+  } catch (error) {
+    error.statusCode = 401
+    console.error(error)
+    next(error)
+  }
+}
+
+module.exports.facebookLoginSuccess = async (req, res, next) => {
+  try {
+    req.user.then(async (data) => {
+      const tokenInfo = {
+        username: data.username,
+        userId: data.id,
+        userPermission: data.userPermission,
+      };
+      const accessToken = tokenService.generateAccessToken(tokenInfo);
+      const refreshToken = tokenService.generateRefreshToken(tokenInfo);
+      const tokenState = {
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        userId: data.id,
+      }; 
+      await tokenService.postToken(tokenState);
+      res.status(200).json(tokenState);
+    })
+  } catch (error) {
+    error.statusCode = 401
+    console.error(error)
+    next(error)
+  }
+}
+
 module.exports.login = async (req, res, next) => {
   try {
     var username = req.body.username || req.body.password;
     if (username == null || undefined) {
       var error = new Error("username not found");
-      error.statusCode = 400;
+      error.statusCode = 401;
       throw error;
     }
     var data = await service.checkLogin(username);
     bcrypt.compare(req.body.password, data.password, async (err, result) => {
       if (result === false) {
         var error2 = new Error("login failed");
-        error2.statusCode = 400;
+        error2.statusCode = 401;
         next(error2);
       } else {
         const tokenInfo = {
@@ -38,17 +90,15 @@ module.exports.login = async (req, res, next) => {
           userId: data.id,
           userPermission: data.userPermission,
         };
-
         const accessToken = tokenService.generateAccessToken(tokenInfo);
         const refreshToken = tokenService.generateRefreshToken(tokenInfo);
-
         const tokenState = {
           accessToken: accessToken,
           refreshToken: refreshToken,
           userId: data.id,
         };
         await tokenService.postToken(tokenState);
-        res.status(200).json(tokenState);
+        res.status(201).json(tokenState);
       }
     });
   } catch (err) {
@@ -91,7 +141,7 @@ module.exports.signup = async (req, res, next) => {
         "Kích hoạt tài khoản",
         dataSend
       );
-      res.status(200).json({ message: "data saved, click the link to active account", link: linkActive });
+      res.status(202).json({ message: "data saved, click the link to active account", link: linkActive });
     });
   } catch (error) {
     next(error);
@@ -101,11 +151,11 @@ module.exports.signup = async (req, res, next) => {
 module.exports.activeAccount = async (req, res, next) => {
   try {
     const userId = parseInt(req.query.userId)
-    console.log(typeof(userId), '\n')
     const emailHash = req.query.hash
     var user = await service.getOneUser(userId)
     if (!user) {
-      throw new Error('user not found')
+      var error = new Error('user not found')
+      error.statusCode=404
     }
     var bcryptCompareResult = await bcrypt.compare(user.email, emailHash)
     if (bcryptCompareResult === false) {
@@ -113,7 +163,7 @@ module.exports.activeAccount = async (req, res, next) => {
       throw error
     }
     await service.updateUser(userId, { active: true })
-    res.json({ message : 'account activated' })
+    res.status(200).json({ message: 'account activated' })
   } catch (error) {
     next(error)
   }
@@ -124,6 +174,7 @@ module.exports.getToken = async (req, res, next) => {
     const decodedJWT = req.decodedJWT;
     if (decodedJWT.isRefresh === 0) {
       var error = new Error("you need provide Refresh Token !");
+      error.statusCode = 418
       throw error;
     }
     const refreshToken = req.headers.authorization.split(" ")[1];
@@ -138,8 +189,9 @@ module.exports.getToken = async (req, res, next) => {
         refreshToken
       );
     }
-    res.json({ accessToken: result });
+    res.status(205).json({ accessToken: result });
   } catch (error) {
+    console.error(error)
     next(error);
   }
 };
@@ -154,7 +206,7 @@ module.exports.logout = async (req, res, next) => {
     var decode = jwt.verify(token, key);
     if (decode) {
       await tokenService.invalidToken(token);
-      res.json({ message: "logout" });
+      res.status(205).json({ message: "logout" });
     }
   } catch (error) {
     console.error(error);
@@ -175,7 +227,6 @@ module.exports.randomNumber = (num) => {
   }
 };
 
-
 module.exports.sendResetPasswordCode = async (req, res, next) => {
   try {
     const result = validationResult(req);
@@ -190,7 +241,9 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
     var user = await service.getOneUser(email);
 
     if (user === null) {
-      throw new Error("Email is not exist");
+      const error =  new Error("Email is not exist")
+      error.statusCode = 404
+      throw error
     }
     const secretCode = this.randomNumber(6);
     var secretCodeUUID = await secretService.postSecret({ email: email, secretCode: secretCode })
@@ -206,11 +259,10 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
       "Đặt lại mật khẩu",
       dataSend
     );
-    res.json({ message: `reset code sended to ${email}, plese check inbox`, link: fullUrl(req, `auth/forgetPassword/resetPassword/${secretCodeUUID}`) });
+    res.status(202).json({ message: `reset code sended to ${email}, plese check inbox`, link: fullUrl(req, `auth/forgetPassword/resetPassword/${secretCodeUUID}`) });
   } catch (error) {
     next(error);
   }
-
 };
 
 module.exports.resetPassword = async (req, res, next) => {
@@ -219,18 +271,21 @@ module.exports.resetPassword = async (req, res, next) => {
     const newPassword = req.body.newPassword;
     const uuid = req.params.uuid;
     if (!uuid) {
-      var error = new Error("uuid not found")
-      throw error
+      var error = new Error("uuid not found");
+      error.statusCode = 404;
+      throw error;
     }
     const secret = req.query.secretCode || req.body.secretCode || null;
-    const secretServiceResult = await secretService.checkSecret(secret, uuid)
+    const secretServiceResult = await secretService.checkSecret(secret, uuid);
     if (!secretServiceResult) {
-      var error = new Error("wrong link or wrong secret code")
-      throw error
+      var error = new Error("wrong link or wrong secret code");
+      error.statusCode = 422;
+      throw error;
     }
 
     if (newPassword.localeCompare(retypePassword) !== 0) {
       var error = new Error("password not match");
+      error.statusCode = 422
       throw error;
     }
     const hash = await bcrypt.hash(newPassword, 12);
@@ -239,7 +294,7 @@ module.exports.resetPassword = async (req, res, next) => {
       var error = new Error('cant change password')
 
     }
-    res.json({ message: 'your password reset success full', data: userUpdatePasswordResult })
+    res.status(204).json({ message: 'your password reset success full', data: userUpdatePasswordResult })
   } catch (error) {
     next(error)
   }

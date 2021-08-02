@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       username: { type: DataTypes.STRING, require: true },
       password: { type: DataTypes.STRING, require: true },
       firstName: { type: DataTypes.STRING, require: true },
+      middleName: { type: DataTypes.STRING, require: true },
       lastName: { type: DataTypes.STRING, require: true },
       email: { type: DataTypes.STRING, require: true },
       avatar: { type: DataTypes.STRING, require: false },
@@ -23,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       userPermission: { type: DataTypes.STRING, require: true, defaultValue: 'User' },
       passwordChangeAt: { type: DataTypes.DATE, require : false, defaultValue : DataTypes.NOW},
       active : {type : DataTypes.BOOLEAN, require : true, defaultValue: false},
+      facebookId : {type :DataTypes.STRING, require:  false}
     },
     {
       sequelize,

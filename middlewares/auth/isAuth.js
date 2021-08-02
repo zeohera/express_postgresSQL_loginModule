@@ -9,10 +9,12 @@ const verityToken = async (req, res, next) => {
       var err = new Error('Wrong token')
       throw err;
     }
+    
     if (tokenState === false){
       var err = new Error('token invalid by logout');
       throw err;
     }
+
     let decoded = undefined;
     let isRefresh = 0
     try {
@@ -40,6 +42,7 @@ const verityToken = async (req, res, next) => {
       req.decodedJWT.isRefresh = isRefresh;
       next();
   } catch (error) {
+    error.statusCode = 401
     next(error);
   }
 };

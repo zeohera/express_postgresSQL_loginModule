@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const schedule = require('node-schedule');
 const moment = require("moment")
+
 const expTokenTime = {
   accessToken : '7d',
   refreshToken : '30d',
@@ -30,18 +31,19 @@ function processText(inputText) {
 }
 
 // làm sạch db sau một ngày 
-schedule.scheduleJob({ hour: 3, minute: 00 }, async function () {
+schedule.scheduleJob({ hour: 10, minute: 25 }, async function () {
   try {
     var accessTokenExp = processText(expTokenTime.accessToken)
-    var accessTokenExp_subtracted = moment().subtract(accessTokenExp[0], accessTokenExp[1])
+    var accessTokenExp_subtracted = moment().subtract(accessTokenExp[0], accessTokenExp[1]).valueOf();
     var refreshTokenExp = processText(expTokenTime.refreshToken)
-    var refreshTokenExp_subtracted = moment().subtract(refreshTokenExp[0], refreshTokenExp[1])
-    console.log('Time for work!');
+    var refreshTokenExp_subtracted = moment().subtract(refreshTokenExp[0], refreshTokenExp[1]).valueOf();
+    console.log('Time for work!', refreshTokenExp_subtracted);
+    
     const deletedData = await Token.destroy({ where: {
       [Op.and]: [
         {state : false },
         {accessTokenUpdateAt : {[Op.lte]: accessTokenExp_subtracted } },
-        {createAt : {[Op.lte]: refreshTokenExp_subtracted } },
+        {createdAt : {[Op.lte]: refreshTokenExp_subtracted } },
       ]
     } })
   } catch (error) {
