@@ -283,7 +283,7 @@ module.exports.resetPassword = async (req, res, next) => {
       throw error;
     }
 
-    if (newPassword.localeCompare(retypePassword) !== 0) {
+    if (newPassword.localeCompare(retypePassword) !== 0) { 
       var error = new Error("password not match");
       error.statusCode = 422
       throw error;
