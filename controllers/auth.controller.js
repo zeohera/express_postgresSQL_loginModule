@@ -9,7 +9,7 @@ const tokenService = require("../services/token.service");
 const secretService = require("../services/secretCode.service");
 const sendEmail = require("../utils/sendEmail").sendEmail;
 const { options } = require("../routes");
-var url = require('url');
+const url = require('url');
 
 function fullUrl(req, pathname, queryObj) {
   return url.format({
@@ -28,14 +28,14 @@ module.exports.passportAuthenticate = async (req, res, next) => {
       clientSecret: process.env.FB_APP_SECRET,
       callbackURL: callbackSecretUrl,
       profileFields: ['id', 'emails', 'name']
-      },
+    },
       function (accessToken, refreshToken, profile, cb) {
         console.log(`fb token \n${accessToken}`)
         var user = profile._json;
         var err, user = service.saveUserFacebook(user);
         console.log(user)
         return cb(err, user);
-    }));
+      }));
     passport.authenticate('facebook')
     res.status(100).redirect(callbackSecretUrl)
   } catch (error) {
@@ -59,7 +59,7 @@ module.exports.facebookLoginSuccess = async (req, res, next) => {
         accessToken: accessToken,
         refreshToken: refreshToken,
         userId: data.id,
-      }; 
+      };
       await tokenService.postToken(tokenState);
       res.status(200).json(tokenState);
     })
@@ -72,13 +72,19 @@ module.exports.facebookLoginSuccess = async (req, res, next) => {
 
 module.exports.login = async (req, res, next) => {
   try {
+    console.log('req.body:', req.body)
     var username = req.body.username || req.body.password;
     if (username == null || undefined) {
       var error = new Error("username not found");
       error.statusCode = 401;
-      throw error;
+      next(error);
     }
     var data = await service.checkLogin(username);
+    if (!data) {
+      var error = new Error('wrong user name or password')
+      error.statusCode = 404
+      throw error
+    }
     bcrypt.compare(req.body.password, data.password, async (err, result) => {
       if (result === false) {
         var error2 = new Error("login failed");
@@ -155,11 +161,12 @@ module.exports.activeAccount = async (req, res, next) => {
     var user = await service.getOneUser(userId)
     if (!user) {
       var error = new Error('user not found')
-      error.statusCode=404
+      error.statusCode = 404
     }
     var bcryptCompareResult = await bcrypt.compare(user.email, emailHash)
     if (bcryptCompareResult === false) {
       var error = new Error("wrong email");
+      error.statusCode = 404
       throw error
     }
     await service.updateUser(userId, { active: true })
@@ -174,10 +181,10 @@ module.exports.getToken = async (req, res, next) => {
     const decodedJWT = req.decodedJWT;
     if (decodedJWT.isRefresh === 0) {
       var error = new Error("you need provide Refresh Token !");
-      error.statusCode = 418
+      error.statusCode = 401
       throw error;
     }
-    const refreshToken = req.headers.authorization.split(" ")[1];
+    const refreshToken = req.query.refreshToken || req.headers.authorization.split(" ")[1];
     let result = await tokenService.checkToken(decodedJWT.userId, refreshToken);
     if (result === null) {
       result = await tokenService.generateAccessTokenSave(
@@ -189,7 +196,7 @@ module.exports.getToken = async (req, res, next) => {
         refreshToken
       );
     }
-    res.status(205).json({ accessToken: result });
+    res.status(200).json({ accessToken: result });
   } catch (error) {
     console.error(error)
     next(error);
@@ -206,7 +213,7 @@ module.exports.logout = async (req, res, next) => {
     var decode = jwt.verify(token, key);
     if (decode) {
       await tokenService.invalidToken(token);
-      res.status(205).json({ message: "logout" });
+      res.status(204).json({ message: "logout" });
     }
   } catch (error) {
     console.error(error);
@@ -232,7 +239,7 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
     const result = validationResult(req);
     console.log('result', result)
     if (!result.isEmpty()) {
-      const error = new Error("Validation failed.");
+      const error = new Error("Validate failed.");
       error.statusCode = 422;
       error.data = result.errors;
       throw error;
@@ -241,25 +248,30 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
     var user = await service.getOneUser(email);
 
     if (user === null) {
-      const error =  new Error("Email is not exist")
+      const error = new Error("Email is not exist")
       error.statusCode = 404
       throw error
     }
+    const fullLink = fullUrl(req, `auth/forgetPassword/${secretCodeUUID}`, { secretCode: secretCode })
     const secretCode = this.randomNumber(6);
+    console.log('secretCode', secretCode)
     var secretCodeUUID = await secretService.postSecret({ email: email, secretCode: secretCode })
     var dataSend = {
       heading: "Nhập mật mã sau để xác định danh tính",
       content: secretCode,
       message:
         "mã này có thời hạn 5 phút , dùng trước khi hết hạn hoặc được cung cấp mã khác",
-      link: fullUrl(req, `auth/forgetPassword/resetPassword/${secretCodeUUID}`, { secretCode: secretCode })
+      link: fullLink
     };
     await sendEmail(
       email,
       "Đặt lại mật khẩu",
       dataSend
     );
-    res.status(202).json({ message: `reset code sended to ${email}, plese check inbox`, link: fullUrl(req, `auth/forgetPassword/resetPassword/${secretCodeUUID}`) });
+    res.status(202).json({
+      message: `reset code sended to ${email}, plese check inbox`,
+      link: fullUrl(req, `${fullLink}`)
+    });
   } catch (error) {
     next(error);
   }
@@ -282,17 +294,16 @@ module.exports.resetPassword = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     }
-
-    if (newPassword.localeCompare(retypePassword) !== 0) { 
+    if (newPassword.localeCompare(retypePassword) !== 0) {
       var error = new Error("password not match");
       error.statusCode = 422
       throw error;
     }
     const hash = await bcrypt.hash(newPassword, 12);
     var userUpdatePasswordResult = service.updateUser(secretServiceResult.email, { password: hash })
+    var invalidToken = tokenService.invalidTokenById(userUpdatePasswordResult.id)
     if (!userUpdatePasswordResult) {
       var error = new Error('cant change password')
-
     }
     res.status(204).json({ message: 'your password reset success full', data: userUpdatePasswordResult })
   } catch (error) {

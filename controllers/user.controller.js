@@ -114,7 +114,8 @@ module.exports.changePassword = async (req, res, next) => {
       throw error
     }
     const hash = await bcrypt.hash(newPassword, 12);
-    var modelResult = await service.updateUser(userId, { password: hash });
+    await service.updateUser(userId, { password: hash });
+    await tokenService.invalidTokenById(userId)
     res
       .json({ message: "change password successful", data: modelResult });
   } catch (error) {

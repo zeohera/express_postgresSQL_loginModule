@@ -17,6 +17,7 @@ module.exports.validate = [
       }
     }),
   body("firstName").trim().notEmpty(),
+  body("middleName").trim().notEmpty(),
   body("lastName").trim().notEmpty(),
   body("email")
     .trim()

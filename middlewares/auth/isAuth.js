@@ -3,15 +3,26 @@ const userService = require("../../services/user.service");
 const tokenService = require("../../services/token.service");
 const verityToken = async (req, res, next) => {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    let token
+    if (!req.headers.authorization) {
+      token = req.query.refreshToken || req.body.refreshToken
+      if (!token) {
+        var err = new Error('token not found')
+        err.statusCode = 401
+        throw err;
+      }
+    } else {
+      token = req.headers.authorization.split(" ")[1]
+    }
     const tokenState = await tokenService.getTokenState(token)
-    if (tokenState === null){
+    if (tokenState === null) {
       var err = new Error('Wrong token')
+      err.statusCode = 401
       throw err;
     }
-    
-    if (tokenState === false){
+    if (tokenState === false) {
       var err = new Error('token invalid by logout');
+      err.statusCode = 401
       throw err;
     }
 
@@ -24,25 +35,26 @@ const verityToken = async (req, res, next) => {
     }
     if (decoded === null) {
       decoded = await jwt.verify(token, process.env.JWT_REFRESH_TOKEN);
-      console.log(decoded)
       isRefresh = 1
     }
     if (!decoded) {
       var err = new Error('Wrong token');
+      err.statusCode = 401
       throw err;
-    } 
+    }
     var username = decoded.username;
-      var iat = decoded.iat;
-      var user = await userService.checkLogin(username, iat);
-      if (user === null) {
-        var error = new Error("token out of date");
-        throw error;
-      } 
-      req.decodedJWT = decoded;
-      req.decodedJWT.isRefresh = isRefresh;
-      next();
+    var iat = decoded.iat;
+    var user = await userService.checkLogin(username, iat);
+    if (user === null) {
+      var error = new Error("token out of date");
+      err.statusCode = 401
+      throw error;
+    }
+    req.decodedJWT = decoded;
+    req.decodedJWT.isRefresh = isRefresh;
+    next();
   } catch (error) {
-    error.statusCode = 401
+    error.statusCode = error.statusCode || 401
     next(error);
   }
 };

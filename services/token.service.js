@@ -87,6 +87,16 @@ module.exports.invalidToken = async (token) => {
   }
 };
 
+module.exports.invalidTokenById = async (id)=> {
+  try {
+    const changeTokenState = await Token.update({state: false}, {where: {userId: id}})
+    return changeTokenState
+  } catch (error) {
+    error.statusCode = 500
+    throw error
+  }
+}
+
 module.exports.getTokenState = async (token) => {
   try {
     const data = await Token.findOne({
@@ -102,6 +112,16 @@ module.exports.getTokenState = async (token) => {
     throw error;
   }
 };
+
+module.exports.getRefreshTokenState = async (token)=> {
+  try{
+    const data = await Token.findOne({refreshToken: token })
+    if (!data) return null
+    return data.state
+  } catch(error){
+    throw error
+  }
+}
 
 module.exports.checkToken = async (id, token) => {
   try {

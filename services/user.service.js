@@ -66,15 +66,15 @@ exports.updateUser = async (param, data) => {
       data.passwordChangeAt = Sequelize.fn("NOW");
     }
     if (typeof (param) === 'number') {
-      const user = await User.update(data, { where: { id: param } });
-      return user;
+      await User.update(data, { where: { id: param } });
+      return await User.findOne({ where: { id: param } });
     } else {
-      const user = await User.update(data, {
+      await User.update(data, {
         where: {
           [Op.or]: [{ username: param }, { email: param }],
         }
       })
-      return user;
+      return await User.findOne({ where: { [Op.or]: [{ username: param }, { email: param }] } });
     }
 
   } catch (error) {
@@ -101,7 +101,7 @@ randomUsernameGenerate = async () => {
   try {
     const randNum = this.randomNumber(6)
     const shortName = uniqueNamesGenerator({
-      dictionaries: [ colors,animals],
+      dictionaries: [colors, animals],
       length: 2,
       style: 'capital',
       separator: ''
@@ -137,7 +137,7 @@ exports.saveUserFacebook = async (data) => {
       return user
     } else {
       var userCheck = await User.findOne({ where: { email: data.email, facebookId: data.id } })
-      if (!userCheck){
+      if (!userCheck) {
         var user = await User.update({ facebookId: data.id }, { where: { email: checkEmail.email } })
 
       }
@@ -153,7 +153,7 @@ exports.saveUserFacebook = async (data) => {
 async function checkLoginActive(info) {
   const user = await User.findOne({
     where: {
-      [Op.or]: [{ username: username }, { email: username }],
+      [Op.or]: [{ username: info }, { email: info }],
       active: true
     },
   });
@@ -161,7 +161,7 @@ async function checkLoginActive(info) {
 }
 
 exports.checkLogin = async (username, iat) => {
-  // nếu cung cấp iat thì sẽ ch eck xem token còn hạn hay không , //middleware/isAuth
+  // nếu cung cấp iat thì sẽ check xem token còn hạn hay không , //middleware/isAuth
   // nếu không cung cấp thì sẽ check xem có active hay không //authController
   try {
     if (typeof iat === "number") {
@@ -169,7 +169,7 @@ exports.checkLogin = async (username, iat) => {
     }
     if (iat === undefined) {
       iat = Date.now() - 1000000000;
-      const user = await checkLoginActive(info);
+      const user = await checkLoginActive(username);
       return user;
     } else {
       const user = await User.findOne({
@@ -178,7 +178,6 @@ exports.checkLogin = async (username, iat) => {
           passwordChangeAt: { [Op.lte]: iat },
         },
       });
-      console.log(user);
       return user;
     }
   } catch (error) {
