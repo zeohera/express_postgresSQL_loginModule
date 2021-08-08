@@ -22,14 +22,14 @@ module.exports = (sequelize, DataTypes) => {
       avatar: { type: DataTypes.STRING, require: false },
       billing: { type: DataTypes.BOOLEAN, require: true },
       userPermission: { type: DataTypes.STRING, require: true, defaultValue: 'User' },
-      passwordChangeAt: { type: DataTypes.DATE, require : false, defaultValue : DataTypes.NOW},
-      active : {type : DataTypes.BOOLEAN, require : true, defaultValue: false},
-      facebookId : {type :DataTypes.STRING, require:  false}
+      passwordChangeAt: { type: DataTypes.DATE, require: false, defaultValue: DataTypes.NOW },
+      active: { type: DataTypes.BOOLEAN, require: true, defaultValue: false },
+      facebookId: { type: DataTypes.STRING, require: false }
     },
     {
       sequelize,
       paranoid: true,
-      modelName: "User",  
+      modelName: "User",
     }
   );
   return User;

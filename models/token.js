@@ -17,8 +17,8 @@ module.exports = (sequelize, DataTypes) => {
       userId: DataTypes.INTEGER,
       refreshToken: DataTypes.STRING,
       accessToken: DataTypes.STRING,
-      accessTokenUpdateAt : {type : DataTypes.DATE, defaultValue : DataTypes.NOW },
-      state : DataTypes.BOOLEAN
+      accessTokenUpdateAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+      state: DataTypes.BOOLEAN,
     },
     {
       sequelize,

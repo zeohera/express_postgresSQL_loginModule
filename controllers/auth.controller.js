@@ -1,93 +1,98 @@
-
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const FacebookStrategy = require('passport-facebook').Strategy;
-const passport = require('passport')
-const { validationResult } = require("express-validator");
-const service = require("../services/user.service");
-const tokenService = require("../services/token.service");
-const secretService = require("../services/secretCode.service");
-const sendEmail = require("../utils/sendEmail").sendEmail;
-const { options } = require("../routes");
 const url = require('url');
+const passport = require('passport');
+const { validationResult } = require('express-validator');
+
+const service = require('../services/user.service');
+const tokenService = require('../services/token.service');
+const secretService = require('../services/secretCode.service');
+const { sendEmail } = require('../utils/sendEmail');
 
 function fullUrl(req, pathname, queryObj) {
   return url.format({
     protocol: req.protocol,
     host: req.get('host'),
-    pathname: pathname,
-    query: queryObj
+    pathname,
+    query: queryObj,
   });
 }
 
 module.exports.passportAuthenticate = async (req, res, next) => {
   try {
-    const callbackSecretUrl = fullUrl(req, 'auth/facebook/secret')
+    const callbackSecretUrl = fullUrl(req, 'auth/facebook/secret');
     passport.use(new FacebookStrategy({
       clientID: process.env.FB_APP_ID,
       clientSecret: process.env.FB_APP_SECRET,
       callbackURL: callbackSecretUrl,
-      profileFields: ['id', 'emails', 'name']
+      profileFields: ['id', 'emails', 'name'],
     },
-      function (accessToken, refreshToken, profile, cb) {
-        console.log(`fb token \n${accessToken}`)
-        var user = profile._json;
-        var err, user = service.saveUserFacebook(user);
-        console.log(user)
-        return cb(err, user);
-      }));
-    passport.authenticate('facebook')
-    res.status(100).redirect(callbackSecretUrl)
+    (accessToken, refreshToken, profile, cb) => {
+      console.log(`fb token \n${accessToken}`);
+      // eslint-disable-next-line no-underscore-dangle
+      const user = profile._json;
+      try {
+        const userReturn = service.saveUserFacebook(user);
+        return cb(null, userReturn);
+      } catch (error) {
+        return cb(error, null);
+      }
+    }));
+    passport.authenticate('facebook');
+    res.status(100).redirect(callbackSecretUrl);
   } catch (error) {
-    error.statusCode = 401
-    console.error(error)
-    next(error)
+    error.statusCode = 401;
+    console.error(error);
+    next(error);
   }
-}
+};
 
 module.exports.facebookLoginSuccess = async (req, res, next) => {
   try {
     req.user.then(async (data) => {
+      // console.log('data ne hehe', data);
       const tokenInfo = {
-        username: data.username,
-        userId: data.id,
-        userPermission: data.userPermission,
+        username: data.dataValues.username,
+        userId: data.dataValues.id,
+        userPermission: data.dataValues.userPermission,
       };
       const accessToken = tokenService.generateAccessToken(tokenInfo);
+      console.log('accessToken', accessToken);
       const refreshToken = tokenService.generateRefreshToken(tokenInfo);
       const tokenState = {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        accessToken,
+        refreshToken,
         userId: data.id,
       };
       await tokenService.postToken(tokenState);
       res.status(200).json(tokenState);
-    })
+    });
   } catch (error) {
-    error.statusCode = 401
-    console.error(error)
-    next(error)
+    error.statusCode = 401;
+    console.error(error);
+    next(error);
   }
-}
+};
 
 module.exports.login = async (req, res, next) => {
   try {
-    console.log('req.body:', req.body)
-    var username = req.body.username || req.body.password;
+    console.log('req.body:', req.body);
+    const username = req.body.username || req.body.password;
     if (username == null || undefined) {
-      var error = new Error("username not found");
+      const error = new Error('username not found');
       error.statusCode = 401;
       next(error);
     }
-    var data = await service.checkLogin(username);
+    const data = await service.checkLogin(username);
     if (!data) {
-      var error = new Error('wrong user name or password')
-      error.statusCode = 404
-      throw error
+      const error = new Error('wrong user name or password');
+      error.statusCode = 404;
+      throw error;
     }
     bcrypt.compare(req.body.password, data.password, async (err, result) => {
       if (result === false) {
-        var error2 = new Error("login failed");
+        const error2 = new Error('login failed');
         error2.statusCode = 401;
         next(error2);
       } else {
@@ -99,8 +104,8 @@ module.exports.login = async (req, res, next) => {
         const accessToken = tokenService.generateAccessToken(tokenInfo);
         const refreshToken = tokenService.generateRefreshToken(tokenInfo);
         const tokenState = {
-          accessToken: accessToken,
-          refreshToken: refreshToken,
+          accessToken,
+          refreshToken,
           userId: data.id,
         };
         await tokenService.postToken(tokenState);
@@ -108,7 +113,7 @@ module.exports.login = async (req, res, next) => {
       }
     });
   } catch (err) {
-    err.message = err.message ? err.message : "error when get users";
+    err.message = err.message ? err.message : 'error when get users';
     err.statusCode = err.statusCode ? err.statusCode : 400;
     next(err);
   }
@@ -118,13 +123,19 @@ module.exports.signup = async (req, res, next) => {
   try {
     const result = validationResult(req);
     if (!result.isEmpty()) {
-      const error = new Error("Validation failed.");
+      const error = new Error('Validation failed.');
       error.statusCode = 422;
       error.data = result.errors;
       throw error;
     }
-    let { username, firstName, lastName, email, password } = req.body;
-    var data = {
+    const {
+      username,
+      firstName,
+      lastName,
+      email,
+      password,
+    } = req.body;
+    const data = {
       username,
       password,
       firstName,
@@ -135,19 +146,19 @@ module.exports.signup = async (req, res, next) => {
     bcrypt.hash(data.password, 12, async (err, hash) => {
       data.password = hash;
       const serviceResult = await service.postUser(data);
-      const emailHash = await bcrypt.hash(data.email, 12)
-      const linkActive = fullUrl(req, `auth/active`, { hash: emailHash, userId: serviceResult.id })
-      var dataSend = {
-        heading: "Kích hoạt tài khoản",
-        content: "Bấn vào đường link để kích hoạt tài khoản",
-        link: linkActive
+      const emailHash = await bcrypt.hash(data.email, 12);
+      const linkActive = fullUrl(req, 'auth/active', { hash: emailHash, userId: serviceResult.id });
+      const dataSend = {
+        heading: 'Kích hoạt tài khoản',
+        content: 'Bấn vào đường link để kích hoạt tài khoản',
+        link: linkActive,
       };
       await sendEmail(
         data.email,
-        "Kích hoạt tài khoản",
-        dataSend
+        'Kích hoạt tài khoản',
+        dataSend,
       );
-      res.status(202).json({ message: "data saved, click the link to active account", link: linkActive });
+      res.status(202).json({ message: 'data saved, click the link to active account', link: linkActive });
     });
   } catch (error) {
     next(error);
@@ -156,35 +167,35 @@ module.exports.signup = async (req, res, next) => {
 
 module.exports.activeAccount = async (req, res, next) => {
   try {
-    const userId = parseInt(req.query.userId)
-    const emailHash = req.query.hash
-    var user = await service.getOneUser(userId)
+    const userId = parseInt(req.query.userId, 10);
+    const emailHash = req.query.hash;
+    const user = await service.getOneUser(userId);
     if (!user) {
-      var error = new Error('user not found')
-      error.statusCode = 404
+      const error = new Error('user not found');
+      error.statusCode = 404;
     }
-    var bcryptCompareResult = await bcrypt.compare(user.email, emailHash)
+    const bcryptCompareResult = await bcrypt.compare(user.email, emailHash);
     if (bcryptCompareResult === false) {
-      var error = new Error("wrong email");
-      error.statusCode = 404
-      throw error
+      const error = new Error('wrong email');
+      error.statusCode = 404;
+      throw error;
     }
-    await service.updateUser(userId, { active: true })
-    res.status(200).json({ message: 'account activated' })
+    await service.updateUser(userId, { active: true });
+    res.status(200).json({ message: 'account activated' });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
 
 module.exports.getToken = async (req, res, next) => {
   try {
-    const decodedJWT = req.decodedJWT;
+    const { decodedJWT } = req;
     if (decodedJWT.isRefresh === 0) {
-      var error = new Error("you need provide Refresh Token !");
-      error.statusCode = 401
+      const error = new Error('you need provide Refresh Token !');
+      error.statusCode = 401;
       throw error;
     }
-    const refreshToken = req.query.refreshToken || req.headers.authorization.split(" ")[1];
+    const refreshToken = req.query.refreshToken || req.headers.authorization.split(' ')[1];
     let result = await tokenService.checkToken(decodedJWT.userId, refreshToken);
     if (result === null) {
       result = await tokenService.generateAccessTokenSave(
@@ -193,27 +204,27 @@ module.exports.getToken = async (req, res, next) => {
           username: decodedJWT.username,
           userPermission: decodedJWT.userPermission,
         },
-        refreshToken
+        refreshToken,
       );
     }
     res.status(200).json({ accessToken: result });
-  } catch (error) {
-    console.error(error)
-    next(error);
+  } catch (error1) {
+    console.error(error1);
+    next(error1);
   }
 };
 
 module.exports.logout = async (req, res, next) => {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    const token = req.headers.authorization.split(' ')[1];
     let key;
     if (req.decodedJWT.isRefresh === 1) {
       key = process.env.JWT_REFRESH_TOKEN;
     } else key = process.env.JWT_ACCESS_TOKEN;
-    var decode = jwt.verify(token, key);
+    const decode = jwt.verify(token, key);
     if (decode) {
       await tokenService.invalidToken(token);
-      res.status(204).json({ message: "logout" });
+      res.status(204).json({ message: 'logout' });
     }
   } catch (error) {
     console.error(error);
@@ -221,56 +232,43 @@ module.exports.logout = async (req, res, next) => {
   }
 };
 
-module.exports.randomNumber = (num) => {
-  try {
-    var pow = Math.pow(10, num);
-    console.log(pow / 10, '\n')
-    var random = Math.random();
-    random = Math.floor(random * pow);
-    if (random < (pow / 10)) throw new Error()
-    return random;
-  } catch (error) {
-    this.randomNumber(num)
-  }
-};
-
 module.exports.sendResetPasswordCode = async (req, res, next) => {
   try {
     const result = validationResult(req);
-    console.log('result', result)
+    console.log('result', result);
     if (!result.isEmpty()) {
-      const error = new Error("Validate failed.");
+      const error = new Error('Validate failed.');
       error.statusCode = 422;
       error.data = result.errors;
       throw error;
     }
-    const email = req.body.email
-    var user = await service.getOneUser(email);
+    const { email } = req.body;
+    const user = await service.getOneUser(email);
 
     if (user === null) {
-      const error = new Error("Email is not exist")
-      error.statusCode = 404
-      throw error
+      const error = new Error('Email is not exist');
+      error.statusCode = 404;
+      throw error;
     }
-    const fullLink = fullUrl(req, `auth/forgetPassword/${secretCodeUUID}`, { secretCode: secretCode })
-    const secretCode = this.randomNumber(6);
-    console.log('secretCode', secretCode)
-    var secretCodeUUID = await secretService.postSecret({ email: email, secretCode: secretCode })
-    var dataSend = {
-      heading: "Nhập mật mã sau để xác định danh tính",
+    const secretCode = service.randomNumber(6);
+    const secretCodeUUID = await secretService.postSecret({ email, secretCode });
+    const fullLink = fullUrl(req, `auth/forgetPassword/ ${secretCodeUUID} `, { secretCode });
+    console.log('secretCode', secretCode);
+    const dataSend = {
+      heading: 'Nhập mật mã sau để xác định danh tính',
       content: secretCode,
       message:
-        "mã này có thời hạn 5 phút , dùng trước khi hết hạn hoặc được cung cấp mã khác",
-      link: fullLink
+        'mã này có thời hạn 5 phút , dùng trước khi hết hạn hoặc được cung cấp mã khác',
+      link: fullLink,
     };
     await sendEmail(
       email,
-      "Đặt lại mật khẩu",
-      dataSend
+      'Đặt lại mật khẩu',
+      dataSend,
     );
     res.status(202).json({
-      message: `reset code sended to ${email}, plese check inbox`,
-      link: fullUrl(req, `${fullLink}`)
+      message: `reset code sended to ${email}, please check inbox`,
+      link: fullUrl(req, `${fullLink}`),
     });
   } catch (error) {
     next(error);
@@ -279,34 +277,35 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
 
 module.exports.resetPassword = async (req, res, next) => {
   try {
-    const retypePassword = req.body.retypePassword;
-    const newPassword = req.body.newPassword;
-    const uuid = req.params.uuid;
+    const { retypePassword } = req.body;
+    const { newPassword } = req.body;
+    const { uuid } = req.params;
     if (!uuid) {
-      var error = new Error("uuid not found");
+      const error = new Error('uuid not found');
       error.statusCode = 404;
       throw error;
     }
     const secret = req.query.secretCode || req.body.secretCode || null;
     const secretServiceResult = await secretService.checkSecret(secret, uuid);
     if (!secretServiceResult) {
-      var error = new Error("wrong link or wrong secret code");
+      const error = new Error('wrong link or wrong secret code');
       error.statusCode = 422;
       throw error;
     }
     if (newPassword.localeCompare(retypePassword) !== 0) {
-      var error = new Error("password not match");
-      error.statusCode = 422
+      const error = new Error('password not match');
+      error.statusCode = 422;
       throw error;
     }
     const hash = await bcrypt.hash(newPassword, 12);
-    var userUpdatePasswordResult = service.updateUser(secretServiceResult.email, { password: hash })
-    var invalidToken = tokenService.invalidTokenById(userUpdatePasswordResult.id)
-    if (!userUpdatePasswordResult) {
-      var error = new Error('cant change password')
+    const updatePasswordResult = service.updateUser(secretServiceResult.email, { password: hash });
+    tokenService.invalidTokenById(updatePasswordResult.id);
+    if (!updatePasswordResult) {
+      const error = new Error('cant change password');
+      throw error;
     }
-    res.status(204).json({ message: 'your password reset success full', data: userUpdatePasswordResult })
+    res.status(204).json({ message: 'your password reset success full', data: updatePasswordResult });
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};

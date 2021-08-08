@@ -1,4 +1,5 @@
-const passport = require('passport')
+const passport = require('passport');
+// eslint-disable-next-line no-unused-vars
 const FacebookStrategy = require('passport-facebook').Strategy;
 
 const passportAuthFacebook = (req, res, next) => {

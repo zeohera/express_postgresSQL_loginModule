@@ -1,39 +1,40 @@
-const { sequelize, Sequelize } = require("../models");
-var User = require("../models/user")(sequelize, Sequelize);
-const { Op } = require("sequelize");
-const { validationResult, check } = require("express-validator");
-const { checkSecret } = require("./secretCode.service");
-const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-names-generator');
+const { Op } = require('sequelize');
+const {
+  uniqueNamesGenerator, colors, animals, NumberDictionary,
+} = require('unique-names-generator');
+
+const { sequelize, Sequelize } = require('../models');
+const User = require('../models/user')(sequelize, Sequelize);
+// const { validationResult, check } = require('express-validator');
+// const { checkSecret } = require('./secretCode.service');
 
 exports.getUsers = async (page, limit) => {
   try {
-    var data = await User.findAll({ limit: limit, offset: page });
+    const data = await User.findAll({ limit, offset: page });
     return data;
   } catch (error) {
-    error.statusCode = 500;
-    error.message = "error when try to select data\n" + error.message;
+    error.message += 'error when try to select data\n';
     throw error;
   }
 };
 
 exports.getOneUser = async (data) => {
   try {
-    if (typeof data === "number") {
+    console.log('data ne hehe:', data);
+    if (typeof data === 'number') {
       data = await User.findOne({
         where: {
           id: data,
         },
       });
-    } else data = await User.findOne({
-      where: {
-        [Op.or]: [{ username: data }, { email: data }],
-      }
-    })
-
+    } else {
+      data = await User.findOne({
+        where: { [Op.or]: [{ username: data }, { email: data }] },
+      });
+    }
     return data;
   } catch (error) {
-    error.statusCode = 500;
-    error.message = "error when try to find data\n" + error.message;
+    error.message += '\n error when try to find data';
     throw error;
   }
 };
@@ -44,18 +45,19 @@ exports.postUser = async (data) => {
     return postedUser;
   } catch (error) {
     error.statusCode = 500;
-    error.message = "error when try to insert data\n" + error.message;
+    error.message += 'error when try to insert data\n';
     throw error;
   }
 };
 
 exports.deleteUser = async (id) => {
   try {
+    // eslint-disable-next-line object-shorthand
     const deletedUser = await User.destroy({ where: { id: id } });
     return deletedUser;
   } catch (error) {
     error.statusCode = 500;
-    error.message = "error when try to delete data\n" + error.message;
+    error.message += 'error when try to delete data\n';
     throw error;
   }
 };
@@ -63,124 +65,113 @@ exports.deleteUser = async (id) => {
 exports.updateUser = async (param, data) => {
   try {
     if (data.password) {
-      data.passwordChangeAt = Sequelize.fn("NOW");
+      data.passwordChangeAt = Sequelize.fn('NOW');
     }
     if (typeof (param) === 'number') {
       await User.update(data, { where: { id: param } });
       return await User.findOne({ where: { id: param } });
-    } else {
-      await User.update(data, {
-        where: {
-          [Op.or]: [{ username: param }, { email: param }],
-        }
-      })
-      return await User.findOne({ where: { [Op.or]: [{ username: param }, { email: param }] } });
     }
-
+    await User.update(data, {
+      where: {
+        [Op.or]: [{ username: param }, { email: param }],
+      },
+    });
+    return await User.findOne({ where: { [Op.or]: [{ username: param }, { email: param }] } });
   } catch (error) {
     error.statusCode = 500;
-    error.message = "error when try to update data\n" + error.message;
+    error.message += 'error when try to update data\n';
     throw error;
   }
 };
 
 module.exports.randomNumber = (num) => {
-  try {
-    var pow = Math.pow(10, num);
-    console.log(pow / 10, '\n')
-    var random = Math.random();
-    random = Math.floor(random * pow);
-    if (random < (pow / 10)) throw new Error()
-    return random;
-  } catch (error) {
-    this.randomNumber(num)
+  const pow = 10 ** num;
+  let random = Math.random();
+  random = Math.floor(random * pow);
+  if (random < (pow / 10)) {
+    this.randomNumber(num);
   }
+  return random;
 };
 
-randomUsernameGenerate = async () => {
-  try {
-    const randNum = this.randomNumber(6)
-    const shortName = uniqueNamesGenerator({
-      dictionaries: [colors, animals],
-      length: 2,
-      style: 'capital',
-      separator: ''
-    })
-    var name = shortName + randNum
-    var check = await this.getOneUser(name)
-    if (!check) {
-      console.log('no found name')
-      return name
-    } this.randomUsernameGenerate()
-  } catch (error) {
-    console.error(error)
+module.exports.randomUsernameGenerate = async () => {
+  const numberDictionary = NumberDictionary.generate({ min: 100, max: 999 });
+  const shortName = uniqueNamesGenerator({
+    dictionaries: [colors, animals, numberDictionary],
+    length: 2,
+    style: 'capital',
+    separator: '',
+  });
+  const check = await this.getOneUser(shortName);
+  if (check) {
+    this.randomUsernameGenerate();
   }
-}
+  console.log('no found name');
+  return shortName;
+};
 
 exports.saveUserFacebook = async (data) => {
   try {
-    console.log(data)
-    var checkEmail = await User.findOne({ where: { email: data.email } })
-    var randName = await randomUsernameGenerate()
+    console.log(data);
+    const checkEmail = await User.findOne({ where: { email: data.email } });
+    const randName = await this.randomUsernameGenerate();
     if (!checkEmail) {
-      let userData = {
+      const userData = {
         email: data.email,
         username: randName,
-        email: data.email,
         firstName: data.first_name,
         lastName: data.last_name,
         middleName: data.middle_name,
         facebookId: data.id,
-        active: true
-      }
-      var user = User.create(userData)
-      return user
-    } else {
-      var userCheck = await User.findOne({ where: { email: data.email, facebookId: data.id } })
-      if (!userCheck) {
-        var user = await User.update({ facebookId: data.id }, { where: { email: checkEmail.email } })
-
-      }
-      var userReturn = await User.findOne({ where: { email: data.email } })
-      return userReturn
+        active: true,
+      };
+      const user = User.create(userData);
+      return user;
     }
+    const userCheck = await User.findOne({ where: { email: data.email, facebookId: data.id } });
+    if (!userCheck) {
+      await User.update({ facebookId: data.id }, { where: { email: checkEmail.email } });
+    }
+    const userReturn = await User.findOne({ where: { email: data.email } });
+    return userReturn;
   } catch (error) {
-    console.error(error)
-    return [error, null]
+    error.message += 'can link facebook acount';
+    console.error(error);
+    return null;
   }
-}
+};
 
 async function checkLoginActive(info) {
   const user = await User.findOne({
     where: {
       [Op.or]: [{ username: info }, { email: info }],
-      active: true
+      active: true,
     },
   });
-  return user
+  return user;
 }
 
 exports.checkLogin = async (username, iat) => {
   // nếu cung cấp iat thì sẽ check xem token còn hạn hay không , //middleware/isAuth
   // nếu không cung cấp thì sẽ check xem có active hay không //authController
   try {
-    if (typeof iat === "number") {
+    if (typeof iat === 'number') {
       iat = new Date(iat * 1000);
     }
     if (iat === undefined) {
       iat = Date.now() - 1000000000;
       const user = await checkLoginActive(username);
       return user;
-    } else {
-      const user = await User.findOne({
-        where: {
-          [Op.or]: [{ username: username }, { email: username }],
-          passwordChangeAt: { [Op.lte]: iat },
-        },
-      });
-      return user;
     }
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [{ username }, { email: username }],
+        passwordChangeAt: { [Op.lte]: iat },
+      },
+    });
+    return user;
   } catch (error) {
+    error.message += 'error when check login';
     throw error;
   }
 };

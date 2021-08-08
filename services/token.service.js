@@ -1,63 +1,64 @@
-const { sequelize, Sequelize } = require("../models");
-var Token = require("../models/token")(sequelize, Sequelize);
-const jwt = require("jsonwebtoken");
-const { Op } = require("sequelize");
+const moment = require('moment');
+const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const schedule = require('node-schedule');
-const moment = require("moment")
+
+const { sequelize, Sequelize } = require('../models');
+const Token = require('../models/token')(sequelize, Sequelize);
 
 const expTokenTime = {
-  accessToken : '7d',
-  refreshToken : '30d',
-}
+  accessToken: '7d',
+  refreshToken: '30d',
+};
 
 function processText(inputText) {
-  var data = inputText.replace(/\'/g, '').split(/(\d+)/).filter(Boolean)
-  data[0] = parseInt(data[0])
-  switch(data[1]){
+  // eslint-disable-next-line no-useless-escape
+  const data = inputText.replace(/\'/g, '').split(/(\d+)/).filter(Boolean);
+  data[0] = parseInt(data[0], 10);
+  switch (data[1]) {
     case 's':
-      data[1] = 'second';break;
+      data[1] = 'second'; break;
     case 'm':
-      data[1] = 'minutes';break;
+      data[1] = 'minutes'; break;
     case 'h':
-      data[1] = 'hours';break;
-    case 'd': 
-      data[1] = 'days';break;
-    case 'm': 
-      data[1] = 'months';break;
-    case 'y': 
-      data[1] = 'years';break;
+      data[1] = 'hours'; break;
+    case 'd':
+      data[1] = 'days'; break;
+    default: data[1] = null;
   }
-  return data
+  return data;
 }
 
-// làm sạch db sau một ngày 
-schedule.scheduleJob({ hour: 10, minute: 25 }, async function () {
+// làm sạch db sau một ngày
+schedule.scheduleJob({ hour: 10, minute: 25 }, async () => {
   try {
-    var accessTokenExp = processText(expTokenTime.accessToken)
-    var accessTokenExp_subtracted = moment().subtract(accessTokenExp[0], accessTokenExp[1]).valueOf();
-    var refreshTokenExp = processText(expTokenTime.refreshToken)
-    var refreshTokenExp_subtracted = moment().subtract(refreshTokenExp[0], refreshTokenExp[1]).valueOf();
-    console.log('Time for work!', refreshTokenExp_subtracted);
-    
-    const deletedData = await Token.destroy({ where: {
-      [Op.and]: [
-        {state : false },
-        {accessTokenUpdateAt : {[Op.lte]: accessTokenExp_subtracted } },
-        {createdAt : {[Op.lte]: refreshTokenExp_subtracted } },
-      ]
-    } })
+    const accessExp = processText(expTokenTime.accessToken);
+    const accessExpSubtracted = moment().subtract(accessExp[0], accessExp[1]).valueOf();
+    const refreshExp = processText(expTokenTime.refreshToken);
+    const refreshExpSubtracted = moment().subtract(refreshExp[0], refreshExp[1]).valueOf();
+    console.log('Time for work!', refreshExpSubtracted);
+    await Token.destroy({
+      where: {
+        [Op.and]: [
+          { state: false },
+          { accessTokenUpdateAt: { [Op.lte]: accessExpSubtracted } },
+          { createdAt: { [Op.lte]: refreshExpSubtracted } },
+        ],
+      },
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 });
 
-// generate token 
-module.exports.generateAccessToken = (user) => {
-  return jwt.sign(user, process.env.JWT_ACCESS_TOKEN, { expiresIn: expTokenTime.accessToken });
-};
-module.exports.generateRefreshToken = (tokenInfo) => {
-  return jwt.sign(tokenInfo, process.env.JWT_REFRESH_TOKEN, { expiresIn: expTokenTime.refreshToken })
-}
+// generate token
+module.exports.generateAccessToken = (user) => jwt.sign(
+  user, process.env.JWT_ACCESS_TOKEN, { expiresIn: expTokenTime.accessToken },
+);
+
+module.exports.generateRefreshToken = (tokenInfo) => jwt.sign(
+  tokenInfo, process.env.JWT_REFRESH_TOKEN, { expiresIn: expTokenTime.refreshToken },
+);
 
 module.exports.postToken = async (data) => {
   try {
@@ -65,6 +66,7 @@ module.exports.postToken = async (data) => {
     const token = await Token.create(data);
     return token;
   } catch (error) {
+    error.message += 'error when save token';
     throw error;
   }
 };
@@ -77,25 +79,24 @@ module.exports.invalidToken = async (token) => {
         where: {
           [Op.or]: [{ refreshToken: token }, { accessToken: token }],
         },
-      }
+      },
     );
     return changedTokenState;
   } catch (error) {
-    // error.statusCode = 500;
-    // error.message = "error when try to change state";
+    error.statusCode = 500;
     throw error;
   }
 };
 
-module.exports.invalidTokenById = async (id)=> {
+module.exports.invalidTokenById = async (id) => {
   try {
-    const changeTokenState = await Token.update({state: false}, {where: {userId: id}})
-    return changeTokenState
+    const changeTokenState = await Token.update({ state: false }, { where: { userId: id } });
+    return changeTokenState;
   } catch (error) {
-    error.statusCode = 500
-    throw error
+    error.message += 'error when try to change token state';
+    throw error;
   }
-}
+};
 
 module.exports.getTokenState = async (token) => {
   try {
@@ -105,23 +106,25 @@ module.exports.getTokenState = async (token) => {
       },
     });
     if (!data) {
-      return null
+      return null;
     }
-    return data.state
+    return data.state;
   } catch (error) {
+    error.message += 'cant find token';
     throw error;
   }
 };
 
-module.exports.getRefreshTokenState = async (token)=> {
-  try{
-    const data = await Token.findOne({refreshToken: token })
-    if (!data) return null
-    return data.state
-  } catch(error){
-    throw error
+module.exports.getRefreshTokenState = async (token) => {
+  try {
+    const data = await Token.findOne({ refreshToken: token });
+    if (!data) return null;
+    return data.state;
+  } catch (error) {
+    error.message += 'cant find token';
+    throw error;
   }
-}
+};
 
 module.exports.checkToken = async (id, token) => {
   try {
@@ -129,23 +132,21 @@ module.exports.checkToken = async (id, token) => {
       where: { userId: id, refreshToken: token },
     });
     try {
-      var tokenDecode = await jwt.verify(
+      await jwt.verify(
         tokenCheckResult.accessToken,
-        process.env.JWT_ACCESS_TOKEN
+        process.env.JWT_ACCESS_TOKEN,
       );
     } catch (error) {
       try {
-        var RefreshTokenDecode = await jwt.verify(tokenCheckResult.refreshToken, process.env.JWT_refresh_TOKEN)
-      } catch (error) {
-        async () => {
-          await Token.destroy({ where: { refreshToken: tokenCheckResult.refreshToken } })
-        }
+        await jwt.verify(tokenCheckResult.refreshToken, process.env.JWT_refresh_TOKEN);
+      } catch (err) {
+        await Token.destroy({ where: { refreshToken: tokenCheckResult.refreshToken } });
       }
       return null;
     }
     return tokenCheckResult.accessToken;
   } catch (error) {
-    console.error(error)
+    console.error(error);
     throw error;
   }
 };
@@ -154,11 +155,12 @@ module.exports.generateAccessTokenSave = async (data, refreshToken) => {
   try {
     const newAccessToken = this.generateAccessToken(data);
     await Token.update(
-      { accessToken: newAccessToken , accessTokenUpdateAt : Sequelize.fn("NOW") },
-      { where: { refreshToken: refreshToken } }
+      { accessToken: newAccessToken, accessTokenUpdateAt: Sequelize.fn('NOW') },
+      { where: { refreshToken } },
     );
     return newAccessToken;
   } catch (error) {
+    error.message += 'cant generate token';
     throw error;
   }
 };

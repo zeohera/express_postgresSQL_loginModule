@@ -1,12 +1,12 @@
-var express = require('express');
-var router = express.Router();
-const controller = require('../controllers/auth.controller')
-const { validate } = require('../middlewares/validator/userValidator')
-const passportAuthFacebook = require('../middlewares/auth/passportAuthFacebook');
-const verityToken = require('../middlewares/auth/isAuth');
-const { validateEmail } = require('../middlewares/validator/emailValidator')
-const passport = require('passport')
-const FacebookStrategy = require('passport-facebook').Strategy;
+const express = require('express');
+const passport = require('passport');
+// const FacebookStrategy = require('passport-facebook').Strategy;
+
+const router = express.Router();
+const controller = require('../controllers/auth.controller');
+const { validate } = require('../middleware/validator/userValidator');
+const verityToken = require('../middleware/auth/isAuth');
+const { validateEmail } = require('../middleware/validator/emailValidator');
 
 /**
  * @swagger
@@ -15,7 +15,6 @@ const FacebookStrategy = require('passport-facebook').Strategy;
  *      bearerAuth:
  *        type: http
  *        scheme: bearer
- * 
  *    schemas:
  *      auth:
  *        type: object
@@ -32,24 +31,21 @@ const FacebookStrategy = require('passport-facebook').Strategy;
  *        example:
  *            username : buichibao1011@gmail.com
  *            password : '111'
- *      
  *      accessTokenScheme:
  *        type: object
  *        properties:
  *          access Token:
  *            type: string
  *            description: access token
- *      
  *      refreshTokenScheme:
  *        type: object
  *        properties:
  *          refreshToken:
  *            type: string
  *            description: refresh token
- * 
  *      loginResponse:
  *        type: object
- *        required: 
+ *        required:
  *          - accessToken
  *          - refreshToken
  *        properties:
@@ -59,11 +55,10 @@ const FacebookStrategy = require('passport-facebook').Strategy;
  *          refreshToken:
  *            type: string
  *            description: refresh token
- *          userId: 
+ *          userId:
  *            type: number
- *          state: 
+ *          state:
  *            type: number
- * 
  *      userInfoSignup:
  *        type : object
  *        required:
@@ -82,7 +77,7 @@ const FacebookStrategy = require('passport-facebook').Strategy;
  *            description: tên
  *          middleName:
  *            type: string
- *            description: tên đệm 
+ *            description: tên đệm
  *          lastName:
  *            type: string
  *            description: họ
@@ -98,7 +93,7 @@ const FacebookStrategy = require('passport-facebook').Strategy;
  *            middleName: Chí
  *            lastName: Bùi
  *            gmail : buichibao1011@gmail.com
- *            password : '111'   
+ *            password : '111'
  */
 
 /**
@@ -113,8 +108,8 @@ router.get('/facebook/secret', passport.authenticate('facebook', { session: fals
 
 /**
  * @swagger
- *  /auth: 
- *    post: 
+ *  /auth:
+ *    post:
  *      summary: Login
  *      tags: [Auth]
  *      requestBody:
@@ -133,12 +128,12 @@ router.get('/facebook/secret', passport.authenticate('facebook', { session: fals
  *        401:
  *          description: wrong username or password
  */
-router.post('/', controller.login)
+router.post('/', controller.login);
 
 /**
  * @swagger
- *  /auth/signup: 
- *    post: 
+ *  /auth/signup:
+ *    post:
  *      summary: Login
  *      tags: [Auth]
  *      requestBody:
@@ -153,17 +148,17 @@ router.post('/', controller.login)
  *        422:
  *          description: Validation failed.
  */
-router.post('/signup', validate, controller.signup)
+router.post('/signup', validate, controller.signup);
 
 /**
- * @swagger 
+ * @swagger
  *  /auth/active:
  *    patch:
  *      tags: [Auth]
  *      summary: active account when signup with user and password
  *      parameters:
  *        - in: path
- *          name: hash 
+ *          name: hash
  *          required: true
  *          schema:
  *            type: string
@@ -173,31 +168,24 @@ router.post('/signup', validate, controller.signup)
  *          schema:
  *            type: string
  *      responses:
- *        200: 
+ *        200:
  *          description: account activated
  *        404:
  *          description: user not found or wrong email
- */ 
-router.patch('/active', controller.activeAccount)
-
-// *      requestBody:
-// *        descriptions: refreshToken 
-// *        content:
-// *          application/json:
-// *            schema:
-// *              $ref: '#/components/schemas/refreshTokenScheme'
-// *                $ref: '#/components/schemas/accessTokenScheme'
-
+ */
+router.patch('/active', controller.activeAccount);
+router.post('/active', controller.activeAccount);
+router.get('/active', controller.activeAccount);
 
 /**
- * @swagger 
+ * @swagger
  *  /auth/getToken:
  *    get:
  *      security:
  *        - bearerAuth: []
  *      summary : return access token
  *      tags: [Auth]
- *      responses:  
+ *      responses:
  *        200:
  *          description: valid access token
  *          content:
@@ -206,11 +194,11 @@ router.patch('/active', controller.activeAccount)
  *                type: object
  *                properties:
  *                  accessToken:
- *                    type: string 
+ *                    type: string
  *        401:
- *          description: wrong token 
+ *          description: wrong token
  */
-router.get('/getToken', verityToken, controller.getToken)
+router.get('/getToken', verityToken, controller.getToken);
 
 /**
  * @swagger
@@ -226,10 +214,10 @@ router.get('/getToken', verityToken, controller.getToken)
  *        500:
  *          description: local sever error
  */
-router.patch('/logout', verityToken, controller.logout)
+router.patch('/logout', verityToken, controller.logout);
 
 /**
- * @swagger 
+ * @swagger
  * /auth/forgetPassword:
  *  post:
  *      tags: [Auth]
@@ -251,10 +239,10 @@ router.patch('/logout', verityToken, controller.logout)
  *        202:
  *          description: email sended
  */
-router.post('/forgetPassword', validateEmail, controller.sendResetPasswordCode)
+router.post('/forgetPassword', validateEmail, controller.sendResetPasswordCode);
 
 /**
- * @swagger 
+ * @swagger
  * /auth/forgetPassword/{uuid}:
  *  patch:
  *    tags: [Auth]
@@ -278,9 +266,12 @@ router.post('/forgetPassword', validateEmail, controller.sendResetPasswordCode)
  *                type: string
  *              retypePassword:
  *                type: string
- *
+ *    responses:
+ *      204:
+ *        description:your password reset success full
+ *      500: internal sever error
  */
-router.patch('/forgetPassword/:uuid', controller.resetPassword)
+router.patch('/forgetPassword/:uuid', controller.resetPassword);
 
-router.get('/forgetPassword/:uuid', (req, res) => {res.send('hello')})
+router.get('/forgetPassword/:uuid', (req, res) => { res.send('hello'); });
 module.exports = router;
