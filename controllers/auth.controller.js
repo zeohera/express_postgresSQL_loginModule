@@ -19,10 +19,14 @@ function fullUrl(req, pathname, queryObj) {
 
 module.exports.login = async (req, res, next) => {
   try {
-    console.log('req.body:', req.body);
-    const username = req.body.username || req.body.password;
+    const { username, password } = req.body;
     if (username == null || undefined) {
       const error = new Error('username not found');
+      error.statusCode = 401;
+      next(error);
+    }
+    if (password == null || undefined) {
+      const error = new Error('password not found');
       error.statusCode = 401;
       next(error);
     }
@@ -33,6 +37,11 @@ module.exports.login = async (req, res, next) => {
       throw error;
     }
     bcrypt.compare(req.body.password, data.password, async (err, result) => {
+      if (err) {
+        const error3 = new Error('login failed, you may want to change login method');
+        error3.statusCode = 401;
+        next(error3);
+      }
       if (result === false) {
         const error2 = new Error('login failed');
         error2.statusCode = 401;
@@ -177,7 +186,6 @@ module.exports.logout = async (req, res, next) => {
 module.exports.sendResetPasswordCode = async (req, res, next) => {
   try {
     const result = validationResult(req);
-    console.log('result', result);
     if (!result.isEmpty()) {
       const error = new Error('Validate failed.');
       error.statusCode = 422;
@@ -195,7 +203,6 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
     const secretCode = service.randomNumber(6);
     const secretCodeUUID = await secretService.postSecret({ email, secretCode });
     const fullLink = fullUrl(req, `auth/forgetPassword/ ${secretCodeUUID} `, { secretCode });
-    console.log('secretCode', secretCode);
     const dataSend = {
       heading: 'Nhập mật mã sau để xác định danh tính',
       content: secretCode,
@@ -219,8 +226,7 @@ module.exports.sendResetPasswordCode = async (req, res, next) => {
 
 module.exports.resetPassword = async (req, res, next) => {
   try {
-    const { retypePassword } = req.body;
-    const { newPassword } = req.body;
+    const { retypePassword, newPassword } = req.body;
     const { uuid } = req.params;
     if (!uuid) {
       const error = new Error('uuid not found');

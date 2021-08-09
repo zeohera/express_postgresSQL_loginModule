@@ -96,6 +96,36 @@ module.exports.updateUser = async (req, res, next) => {
   }
 };
 
+module.exports.addPasswordOauth = async (req, res, next) => {
+  try {
+    const { password, retypePassword } = req.body;
+    if (password.localeCompare(retypePassword) !== 0) {
+      const error = new Error('password not match');
+      error.statusCode = 400;
+      throw error;
+    }
+    const checkUser = service.getOneUser(req.decodedJWT.username);
+    if (checkUser.password !== undefined) {
+      const error = new Error('your can only sign first time password one time');
+      error.statusCode = 400;
+      throw error;
+    }
+    const paramsId = parseInt(req.params.id, 10);
+    if (req.decodedJWT.userId !== paramsId) {
+      console.log(req.decodedJWT.userId, req.params.id);
+      const error = new Error('you can change other user\'s password');
+      error.statusCode = 400;
+      throw error;
+    }
+    const hasedPassword = await bcrypt.hash(password, 12);
+    await service.updateUser(req.decodedJWT.userId, { password: hasedPassword });
+    res.status(200).json({ message: 'password added' });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+
 module.exports.changePassword = async (req, res, next) => {
   try {
     const {
@@ -112,7 +142,7 @@ module.exports.changePassword = async (req, res, next) => {
     }
     if (newPassword.localeCompare(retypePassword) !== 0) {
       const error = new Error('password not match');
-      error.statusCode(400);
+      error.statusCode = 400;
       throw error;
     }
     const user = await service.getOneUser(userId);

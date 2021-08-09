@@ -4,6 +4,7 @@ const router = express.Router();
 const controller = require('../controllers/user.controller');
 const { validate } = require('../middleware/validator/userValidator');
 const verifyToken = require('../middleware/auth/isAuth');
+const verityToken = require('../middleware/auth/isAuth');
 /* GET users listing. */
 /**
  * @swagger
@@ -101,7 +102,12 @@ const verifyToken = require('../middleware/auth/isAuth');
  *              schema:
  *                $ref: '#/components/schemas/user'
  */
-router.get('/', verifyToken, controller.getUsers);
+router.route('/')
+  .get(verifyToken, controller.getUsers)
+  .post(validate, controller.postUser);
+// router.get('/', verifyToken, controller.getUsers);
+
+// need to update combine with admin authorization
 
 /**
  * @swagger
@@ -131,9 +137,6 @@ router.get('/', verifyToken, controller.getUsers);
  */
 router.get('/:id', verifyToken, controller.getUser);
 
-// need to update combine with admin authorization
-router.post('/', validate, controller.postUser);
-
 /**
  * @swagger
  *  /users/{id}:
@@ -161,6 +164,34 @@ router.post('/', validate, controller.postUser);
  *                $ref: '#/components/schemas/user'
  */
 router.delete('/:id', verifyToken, controller.deleteUser);
+
+/**
+ * @swagger
+ *  /users/{id}:
+ *    patch:
+ *      security:
+ *        - bearerAuth: []
+ *      tags: [Users]
+ *      summary: update user info
+ *      requestBody:
+ *       descriptions: info
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/userInfoUpdate'
+ *      responses:
+ *        400:
+ *          description: error when get user
+ *        500:
+ *          description: internal sever error
+ *        204:
+ *          description: user
+ *          content:
+ *            application/json:
+ *              schema:
+ *                $ref: '#/components/schemas/user'
+ */
+router.patch('/:id', validate, verifyToken, controller.updateUser);
 
 /**
  * @swagger
@@ -194,34 +225,7 @@ router.delete('/:id', verifyToken, controller.deleteUser);
  *              schema:
  *                $ref: '#/components/schemas/user'
  */
+router.patch('/:id/firstPassword', verityToken, controller.addPasswordOauth);
 router.patch('/:id/changePassword', verifyToken, controller.changePassword);
-
-/**
- * @swagger
- *  /users/{id}:
- *    patch:
- *      security:
- *        - bearerAuth: []
- *      tags: [Users]
- *      summary: update user info
- *      requestBody:
- *       descriptions: info
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/userInfoUpdate'
- *      responses:
- *        400:
- *          description: error when get user
- *        500:
- *          description: internal sever error
- *        204:
- *          description: user
- *          content:
- *            application/json:
- *              schema:
- *                $ref: '#/components/schemas/user'
- */
-router.patch('/:id', validate, verifyToken, controller.updateUser);
 
 module.exports = router;

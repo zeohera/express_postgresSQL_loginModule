@@ -20,7 +20,6 @@ exports.getUsers = async (page, limit) => {
 
 exports.getOneUser = async (data) => {
   try {
-    console.log('data ne hehe:', data);
     if (typeof data === 'number') {
       data = await User.findOne({
         where: {
@@ -95,10 +94,10 @@ module.exports.randomNumber = (num) => {
 };
 
 module.exports.randomUsernameGenerate = async () => {
-  const numberDictionary = NumberDictionary.generate({ min: 100, max: 999 });
+  const numberDictionary = NumberDictionary.generate({ min: 100000, max: 999999 });
   const shortName = uniqueNamesGenerator({
     dictionaries: [colors, animals, numberDictionary],
-    length: 2,
+    length: 3,
     style: 'capital',
     separator: '',
   });
@@ -106,13 +105,11 @@ module.exports.randomUsernameGenerate = async () => {
   if (check) {
     this.randomUsernameGenerate();
   }
-  console.log('no found name');
   return shortName;
 };
 
 exports.saveUserFacebook = async (data) => {
   try {
-    console.log(data);
     const checkEmail = await User.findOne({ where: { email: data.email } });
     const randName = await this.randomUsernameGenerate();
     if (!checkEmail) {
@@ -143,7 +140,6 @@ exports.saveUserFacebook = async (data) => {
 
 exports.saveUserGoogle = async (data) => {
   try {
-    console.log('data.sub:', data.sub);
     const checkEmail = await User.findOne({ where: { email: data.email } });
     const randName = await this.randomUsernameGenerate();
     const familyNameSplit = data.family_name.split(' ');

@@ -22,7 +22,6 @@ passport.use(new GoogleStrategy({
 (accessToken, refreshToken, profile, cb) => {
   // eslint-disable-next-line no-underscore-dangle
   const user = profile._json;
-  console.log(user);
   try {
     const userReturn = service.saveUserGoogle(user);
     return cb(null, userReturn);
@@ -34,9 +33,7 @@ passport.use(new GoogleStrategy({
 module.exports.reqOauth = async (req, res, next) => {
   try {
     const callbackSecretUrl = fullUrl(req, 'auth/google/secret');
-    console.log('check\n\n');
     passport.authenticate('google');
-    console.log('check\n\n');
     res.status(100).redirect(callbackSecretUrl);
   } catch (error) {
     error.statusCode = 401;
@@ -48,14 +45,12 @@ module.exports.reqOauth = async (req, res, next) => {
 module.exports.handleSuccessRes = async (req, res, next) => {
   try {
     req.user.then(async (data) => {
-      // console.log('data ne hehe', data);
       const tokenInfo = {
         username: data.dataValues.username,
         userId: data.dataValues.id,
         userPermission: data.dataValues.userPermission,
       };
       const accessToken = tokenService.generateAccessToken(tokenInfo);
-      console.log('accessToken', accessToken);
       const refreshToken = tokenService.generateRefreshToken(tokenInfo);
       const tokenState = {
         accessToken,
