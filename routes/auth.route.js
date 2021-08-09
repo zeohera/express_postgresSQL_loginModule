@@ -1,13 +1,13 @@
 const express = require('express');
 const passport = require('passport');
-// const FacebookStrategy = require('passport-facebook').Strategy;
 
 const router = express.Router();
 const controller = require('../controllers/auth.controller');
+const googleAuthController = require('../controllers/OAuth/googleAuth');
+const facebookAuthController = require('../controllers/OAuth/facebookAuth');
 const { validate } = require('../middleware/validator/userValidator');
 const verityToken = require('../middleware/auth/isAuth');
 const { validateEmail } = require('../middleware/validator/emailValidator');
-
 /**
  * @swagger
  *  components:
@@ -103,8 +103,11 @@ const { validateEmail } = require('../middleware/validator/emailValidator');
  *  description: authenticate and authorization user
  */
 
-router.get('/facebook', controller.passportAuthenticate);
-router.get('/facebook/secret', passport.authenticate('facebook', { session: false, scope: ['email'] }), controller.facebookLoginSuccess);
+router.get('/facebook', facebookAuthController.reqOauth);
+router.get('/facebook/secret', passport.authenticate('facebook', { session: false, scope: ['email'] }), facebookAuthController.handleSuccessRes);
+
+router.get('/google', googleAuthController.reqOauth);
+router.get('/google/secret', passport.authenticate('google', { session: false, scope: ['profile', 'email'] }), googleAuthController.handleSuccessRes);
 
 /**
  * @swagger

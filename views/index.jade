@@ -4,6 +4,9 @@ block content
   h1= title
   p Welcome to #{title}
   a(href ='/auth/facebook') Facebook
+  br
+  a(href ='/auth/google') Google
+  
   script.
     window.fbAsyncInit = function() {
     FB.init({

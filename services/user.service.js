@@ -135,7 +135,40 @@ exports.saveUserFacebook = async (data) => {
     const userReturn = await User.findOne({ where: { email: data.email } });
     return userReturn;
   } catch (error) {
-    error.message += 'can link facebook acount';
+    error.message += 'can link facebook account';
+    console.error(error);
+    return null;
+  }
+};
+
+exports.saveUserGoogle = async (data) => {
+  try {
+    console.log('data.sub:', data.sub);
+    const checkEmail = await User.findOne({ where: { email: data.email } });
+    const randName = await this.randomUsernameGenerate();
+    const familyNameSplit = data.family_name.split(' ');
+    if (!checkEmail) {
+      const userData = {
+        googleId: data.sub,
+        email: data.email,
+        username: randName,
+        firstName: data.given_name,
+        lastName: familyNameSplit[0],
+        middleName: familyNameSplit[1],
+        active: true,
+        avatar: data.picture,
+      };
+      const user = User.create(userData);
+      return user;
+    }
+    const userCheck = await User.findOne({ where: { email: data.email, googleId: data.sub } });
+    if (!userCheck) {
+      await User.update({ googleId: data.sub }, { where: { email: checkEmail.email } });
+    }
+    const userReturn = await User.findOne({ where: { email: data.email } });
+    return userReturn;
+  } catch (error) {
+    error.message += ', can link facebook account';
     console.error(error);
     return null;
   }
