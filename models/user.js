@@ -28,6 +28,17 @@ module.exports = (sequelize, DataTypes) => {
       googleId: { type: DataTypes.STRING, require: false, unique: true },
     },
     {
+      hooks: {
+        beforeCreate: (user, options) => {
+          user.dataValues.createdAt = Math.floor(Date.now() / 1000);
+          user.dataValues.updatedAt = Math.floor(Date.now() / 1000);
+          user.dataValues.passwordChangeAt = Math.floor(Date.now() / 1000);
+        },
+        beforeUpdate: (user, options) => {
+          user.dataValues.updatedAt = Math.floor(Date.now() / 1000);
+          user.dataValues.passwordChangeAt = Math.floor(Date.now() / 1000);
+        },
+      },
       sequelize,
       paranoid: true,
       modelName: 'User',

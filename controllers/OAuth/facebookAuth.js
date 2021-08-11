@@ -50,11 +50,9 @@ module.exports.handleSuccessRes = async (req, res, next) => {
       const tokenInfo = {
         username: data.dataValues.username,
         userId: data.dataValues.id,
-        userPermission: data.dataValues.userPermission,
       };
-      const accessToken = tokenService.generateAccessToken(tokenInfo);
-      console.log('accessToken', accessToken);
       const refreshToken = tokenService.generateRefreshToken(tokenInfo);
+      const accessToken = tokenService.generateAccessToken(tokenInfo);
       const tokenState = {
         accessToken,
         refreshToken,

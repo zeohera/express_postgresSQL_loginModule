@@ -21,9 +21,20 @@ module.exports = (sequelize, DataTypes) => {
       state: DataTypes.BOOLEAN,
     },
     {
+      hooks: {
+        beforeCreate: (token, options) => {
+          token.dataValues.createdAt = Math.floor(Date.now() / 1000);
+          token.dataValues.updatedAt = Math.floor(Date.now() / 1000);
+          token.dataValues.accessTokenUpdateAt = Math.floor(Date.now() / 1000);
+        },
+        beforeUpdate: (token, options) => {
+          token.dataValues.updatedAt = Math.floor(Date.now() / 1000);
+          token.dataValues.accessTokenUpdateAt = Math.floor(Date.now() / 1000);
+        },
+      },
       sequelize,
-      modelName: "Token",
-    }
+      modelName: 'Token',
+    },
   );
   return Token;
 };

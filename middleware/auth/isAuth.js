@@ -45,6 +45,7 @@ const verityToken = async (req, res, next) => {
       throw err;
     }
     const { username, iat } = decoded;
+    console.log(iat);
     const user = await userService.checkLogin(username, iat);
     if (user === null) {
       const error = new Error('token out of date');
