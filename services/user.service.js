@@ -1,16 +1,60 @@
 const { Op } = require('sequelize');
+
 const {
   uniqueNamesGenerator, colors, animals, NumberDictionary,
 } = require('unique-names-generator');
 
 const { sequelize, Sequelize } = require('../models');
 const User = require('../models/user')(sequelize, Sequelize);
+const userToRoleService = require('./userToRole.service');
 // const { validationResult, check } = require('express-validator');
 // const { checkSecret } = require('./secretCode.service');
 
-exports.getUsers = async (page, limit) => {
+exports.getUsers = async (page, limit, type, billing, authType) => {
   try {
-    const data = await User.findAll({ limit, offset: page });
+    let whereParams = {};
+    console.log(type, billing, authType);
+    if (billing !== null) {
+      if (billing === 'true') {
+        billing = true;
+        whereParams.billing = billing;
+      } else if (billing === 'false') {
+        billing = false;
+        whereParams.billing = billing;
+      } else {
+        throw new Error('wrong params');
+      }
+    }
+    // authType : SSO , 2FA, Default
+    if (authType !== 'all') {
+      if (authType === 'SSO') {
+        const tempParams = {
+          where: {
+            [Op.or]: [{ facebookId: { [Op.not]: null } }, { googleId: { [Op.not]: null } }],
+          },
+        };
+        whereParams = { ...tempParams.where, ...whereParams };
+        console.log('tempParams.where', tempParams.where);
+      }
+      if (authType === '2FA') {
+        whereParams.twoFactor = true;
+      }
+      if (authType === 'default') {
+        const tempParams = {
+          where: { password: { [Op.not]: null } },
+        };
+        whereParams = { ...tempParams.where, ...whereParams };
+      }
+    }
+    if (type !== null) {
+      const typeResult = await userToRoleService.getUserOfRole(type);
+      const tempParams = {
+        where: { id: { [Op.in]: typeResult } },
+      };
+      whereParams = { ...tempParams.where, ...whereParams };
+    }
+    console.log('whereParams', whereParams);
+    const data = await User.findAll({ limit, offset: page, where: { ...whereParams } });
     return data;
   } catch (error) {
     error.message += 'error when try to select data\n';
@@ -181,8 +225,8 @@ async function checkLoginActive(info) {
 }
 
 exports.checkLogin = async (username, iat) => {
-  // nếu cung cấp iat thì sẽ check xem token còn hạn hay không , //middleware/isAuth
-  // nếu không cung cấp thì sẽ check xem có active hay không //authController
+  // nếu cung cấp iat thì sẽ check xem token còn hạn hay ko , //middleware/isAuth
+  // nếu ko cung cấp thì sẽ check xem có active hay ko //authController
   try {
     if (typeof iat === 'number') {
       iat = new Date(iat * 1000);

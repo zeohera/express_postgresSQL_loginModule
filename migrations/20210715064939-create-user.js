@@ -27,6 +27,7 @@ module.exports = {
       username: {
         type: Sequelize.STRING,
         require: true,
+        unique: true,
       },
       password: {
         type: Sequelize.STRING,
@@ -34,10 +35,6 @@ module.exports = {
       },
       billing: {
         type: Sequelize.BOOLEAN,
-        require: true,
-      },
-      userPermission: {
-        type: Sequelize.STRING,
         require: true,
       },
       createdAt: {

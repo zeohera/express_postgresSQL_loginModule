@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-// const { DataTypes } = require("sequelize/types");
+// const { DataTypes } = require('sequelize/types');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -13,21 +13,27 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
      */
-    return queryInterface.bulkInsert("Users", [
+    
+    await queryInterface.bulkInsert('Users', [
       {
-        firstName: "Bao",
-        lastName: "Bui",
-        email: "buichibao1011@gmail.com",
-        avatar: "DataTypes.STRING",
+        id: '0',
+        firstName: 'Bao',
+        lastName: 'Bui',
+        email: 'baobc@acaziasoft.com',
+        avatar: '',
         username: 'chibao',
-        password: "1234",
+        password: '$2b$12$eZyA9zsVymQPDzlIreJUM.rypcV9zHZ5TNo.F2LJvRzECBCVMcqT6',
         billing: true,
-        userPermission: "admin",
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ]);
+    await queryInterface.bulkInsert('userToRoles', [{
+      userId: 0,
+      roleId: 1,
+    }]);
   },
+
   down: async (queryInterface, Sequelize) => {
     /**
      * Add commands to revert seed here.
@@ -35,6 +41,6 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
-    return queryInterface.bulkDelete("Users", null, {});
+    return queryInterface.bulkDelete('Users', null, {});
   },
 };

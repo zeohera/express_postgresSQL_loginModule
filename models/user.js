@@ -13,19 +13,19 @@ module.exports = (sequelize, DataTypes) => {
   }
   User.init(
     {
-      username: { type: DataTypes.STRING, require: true },
+      username: { type: DataTypes.STRING, require: true, unique: true },
       password: { type: DataTypes.STRING, require: true },
       firstName: { type: DataTypes.STRING, require: true },
       middleName: { type: DataTypes.STRING, require: true },
       lastName: { type: DataTypes.STRING, require: true },
-      email: { type: DataTypes.STRING, require: true },
+      email: { type: DataTypes.STRING, require: true, unique: true },
       avatar: { type: DataTypes.STRING, require: false },
-      billing: { type: DataTypes.BOOLEAN, require: true },
-      userPermission: { type: DataTypes.STRING, require: true, defaultValue: 'User' },
+      billing: { type: DataTypes.BOOLEAN, require: true, defaultValue: true },
+      userPermission: { type: DataTypes.STRING, require: true },
       passwordChangeAt: { type: DataTypes.DATE, require: false, defaultValue: DataTypes.NOW },
       active: { type: DataTypes.BOOLEAN, require: true, defaultValue: false },
-      facebookId: { type: DataTypes.STRING, require: false },
-      googleId: { type: DataTypes.STRING, require: false },
+      facebookId: { type: DataTypes.STRING, require: false, unique: true },
+      googleId: { type: DataTypes.STRING, require: false, unique: true },
     },
     {
       sequelize,

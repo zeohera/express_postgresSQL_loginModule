@@ -4,10 +4,13 @@ const service = require('../services/user.service');
 const tokenService = require('../services/token.service');
 
 module.exports.getUsers = async (req, res, next) => {
-  const page = req.params.page ? req.params.page : 0;
-  const limit = req.params.limit ? req.params.limit : 10;
+  const page = req.query.page ? req.query.page : 0;
+  const limit = req.query.limit ? req.query.limit : 10;
+  const type = req.query.type ? req.query.type : null;
+  const billing = req.query.billing ? req.query.billing : null;
+  const authType = req.query.authType ? req.query.authType : 'all';
   try {
-    const data = await service.getUsers(page, limit);
+    const data = await service.getUsers(page, limit, type, billing, authType);
     res.status(200).json(data);
   } catch (err) {
     err.message = err.message ? err.message : 'error when get users';
@@ -60,8 +63,7 @@ module.exports.deleteUser = async (req, res, next) => {
       error.statusCode = 404;
       throw error;
     }
-    const deletedUser = await service.deleteUser(id);
-    console.log(deletedUser);
+    await service.deleteUser(id);
     res.status(200).json({ message: 'delete success' });
   } catch (error) {
     next(error);
@@ -79,7 +81,6 @@ module.exports.updateUser = async (req, res, next) => {
     }
     const id = req.decodedJWT.userId;
     const data = req.body;
-    console.log(data);
     const user = await service.getOneUser(id);
     if (user === null) {
       const error = new Error('user need to update not found');
@@ -112,13 +113,12 @@ module.exports.addPasswordOauth = async (req, res, next) => {
     }
     const paramsId = parseInt(req.params.id, 10);
     if (req.decodedJWT.userId !== paramsId) {
-      console.log(req.decodedJWT.userId, req.params.id);
       const error = new Error('you can change other user\'s password');
       error.statusCode = 400;
       throw error;
     }
-    const hasedPassword = await bcrypt.hash(password, 12);
-    await service.updateUser(req.decodedJWT.userId, { password: hasedPassword });
+    const hashedPassword = await bcrypt.hash(password, 12);
+    await service.updateUser(req.decodedJWT.userId, { password: hashedPassword });
     res.status(200).json({ message: 'password added' });
   } catch (error) {
     console.error(error);
@@ -133,8 +133,8 @@ module.exports.changePassword = async (req, res, next) => {
       newPassword,
       retypePassword,
       userId,
-      userIdParam,
     } = req.body;
+    const userIdParam = req.params.id;
     if (userId !== userIdParam) {
       const error = new Error('you can not change other user\'s password');
       error.statusCode(401);
@@ -157,7 +157,7 @@ module.exports.changePassword = async (req, res, next) => {
     res.status(204)
       .json({ message: 'change password successful' });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     next(error);
   }
 };

@@ -4,7 +4,7 @@ const router = express.Router();
 const controller = require('../controllers/user.controller');
 const { validate } = require('../middleware/validator/userValidator');
 const verifyToken = require('../middleware/auth/isAuth');
-const verityToken = require('../middleware/auth/isAuth');
+const ownerCheck = require('../middleware/auth/owner');
 /* GET users listing. */
 /**
  * @swagger
@@ -14,6 +14,15 @@ const verityToken = require('../middleware/auth/isAuth');
  *        type: http
  *        scheme: bearer
  *    schemas:
+ *      firstTimeChangePassword:
+ *        type: object
+ *        properties:
+ *          password:
+ *            type: string
+ *            description: recent password
+ *          retypePassword:
+ *            type: string
+ *            description: retype new password
  *      changePassword:
  *        type: object
  *        properties:
@@ -105,7 +114,6 @@ const verityToken = require('../middleware/auth/isAuth');
 router.route('/')
   .get(verifyToken, controller.getUsers)
   .post(validate, controller.postUser);
-// router.get('/', verifyToken, controller.getUsers);
 
 // need to update combine with admin authorization
 
@@ -134,12 +142,6 @@ router.route('/')
  *            application/json:
  *              schema:
  *                $ref: '#/components/schemas/user'
- */
-router.get('/:id', verifyToken, controller.getUser);
-
-/**
- * @swagger
- *  /users/{id}:
  *    delete:
  *      security:
  *        - bearerAuth: []
@@ -162,12 +164,6 @@ router.get('/:id', verifyToken, controller.getUser);
  *            application/json:
  *              schema:
  *                $ref: '#/components/schemas/user'
- */
-router.delete('/:id', verifyToken, controller.deleteUser);
-
-/**
- * @swagger
- *  /users/{id}:
  *    patch:
  *      security:
  *        - bearerAuth: []
@@ -191,7 +187,41 @@ router.delete('/:id', verifyToken, controller.deleteUser);
  *              schema:
  *                $ref: '#/components/schemas/user'
  */
-router.patch('/:id', validate, verifyToken, controller.updateUser);
+router.route('/:id')
+  .all(verifyToken)
+  .get(controller.getUser)
+  .delete(controller.deleteUser)
+  .patch(validate, controller.updateUser);
+
+/**
+ * @swagger
+ *  /users/{id}/firstPassword:
+ *    patch:
+ *      security:
+ *        - bearerAuth: []
+ *      tags: [Users]
+ *      summary: change password for the firs time in forever
+ *      parameters:
+ *        - in: path
+ *          name: id
+ *          required: true
+ *          schema:
+ *            type: string
+ *      requestBody:
+ *       descriptions: info
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/firstTimeChangePassword'
+ *      responses:
+ *        400:
+ *          description: error when get user
+ *        500:
+ *          description: internal sever error
+ *        200:
+ *          description: password added
+ */
+router.patch('/:id/firstPassword', verifyToken, ownerCheck, controller.addPasswordOauth);
 
 /**
  * @swagger
@@ -225,7 +255,6 @@ router.patch('/:id', validate, verifyToken, controller.updateUser);
  *              schema:
  *                $ref: '#/components/schemas/user'
  */
-router.patch('/:id/firstPassword', verityToken, controller.addPasswordOauth);
-router.patch('/:id/changePassword', verifyToken, controller.changePassword);
+router.patch('/:id/changePassword', verifyToken, ownerCheck, controller.changePassword);
 
 module.exports = router;

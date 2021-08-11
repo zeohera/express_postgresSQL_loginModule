@@ -4,6 +4,7 @@ const url = require('url');
 const { validationResult } = require('express-validator');
 
 const service = require('../services/user.service');
+const userRoleService = require('../services/userToRole.service');
 const tokenService = require('../services/token.service');
 const secretService = require('../services/secretCode.service');
 const { sendEmail } = require('../utils/sendEmail');
@@ -97,6 +98,8 @@ module.exports.signup = async (req, res, next) => {
     bcrypt.hash(data.password, 12, async (err, hash) => {
       data.password = hash;
       const serviceResult = await service.postUser(data);
+      const { id } = serviceResult;
+      await userRoleService.postUserRole(id, 3);
       const emailHash = await bcrypt.hash(data.email, 12);
       const linkActive = fullUrl(req, 'auth/active', { hash: emailHash, userId: serviceResult.id });
       const dataSend = {
