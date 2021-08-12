@@ -34,7 +34,7 @@ module.exports.login = async (req, res, next) => {
     const data = await service.checkLogin(username);
     if (!data) {
       const error = new Error('wrong user name or password');
-      error.statusCode = 404;
+      error.statusCode = 401;
       throw error;
     }
     bcrypt.compare(req.body.password, data.password, async (err, result) => {
@@ -122,12 +122,15 @@ module.exports.signup = async (req, res, next) => {
 module.exports.activeAccount = async (req, res, next) => {
   try {
     const userId = parseInt(req.query.userId, 10);
-    const emailHash = req.query.hash;
+    let emailHash = req.query.hash;
     const user = await service.getOneUser(userId);
     if (!user) {
       const error = new Error('user not found');
       error.statusCode = 404;
     }
+    // fix for swagger
+    emailHash = emailHash.replace(/%24/g, '$');
+    emailHash = emailHash.replace(/%2F/g, '/');
     const bcryptCompareResult = await bcrypt.compare(user.email, emailHash);
     if (bcryptCompareResult === false) {
       const error = new Error('wrong email');
@@ -178,7 +181,7 @@ module.exports.logout = async (req, res, next) => {
     const decode = jwt.verify(token, key);
     if (decode) {
       await tokenService.invalidToken(token);
-      res.status(204).json({ message: 'logout' });
+      res.status(205);
     }
   } catch (error) {
     console.error(error);
@@ -233,14 +236,14 @@ module.exports.resetPassword = async (req, res, next) => {
     const { uuid } = req.params;
     if (!uuid) {
       const error = new Error('uuid not found');
-      error.statusCode = 404;
+      error.statusCode = 400;
       throw error;
     }
     const secret = req.query.secretCode || req.body.secretCode || null;
     const secretServiceResult = await secretService.checkSecret(secret, uuid);
     if (!secretServiceResult) {
       const error = new Error('wrong link or wrong secret code');
-      error.statusCode = 422;
+      error.statusCode = 401;
       throw error;
     }
     if (newPassword.localeCompare(retypePassword) !== 0) {

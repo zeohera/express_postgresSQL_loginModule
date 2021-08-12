@@ -6,14 +6,14 @@ const {
 
 const { sequelize, Sequelize } = require('../models');
 const User = require('../models/user')(sequelize, Sequelize);
-const userToRoleService = require('./userToRole.service');
+const userRoleService = require('./userToRole.service');
+
 // const { validationResult, check } = require('express-validator');
 // const { checkSecret } = require('./secretCode.service');
 
 exports.getUsers = async (page, limit, type, billing, authType) => {
   try {
     let whereParams = {};
-    console.log(type, billing, authType);
     if (billing !== null) {
       if (billing === 'true') {
         billing = true;
@@ -34,7 +34,6 @@ exports.getUsers = async (page, limit, type, billing, authType) => {
           },
         };
         whereParams = { ...tempParams.where, ...whereParams };
-        console.log('tempParams.where', tempParams.where);
       }
       if (authType === '2FA') {
         whereParams.twoFactor = true;
@@ -47,17 +46,21 @@ exports.getUsers = async (page, limit, type, billing, authType) => {
       }
     }
     if (type !== null) {
-      const typeResult = await userToRoleService.getUserOfRole(type);
+      const typeResult = await userRoleService.getUserOfRole(type);
       const tempParams = {
         where: { id: { [Op.in]: typeResult } },
       };
       whereParams = { ...tempParams.where, ...whereParams };
     }
-    console.log('whereParams', whereParams);
-    const data = await User.findAll({ limit, offset: page, where: { ...whereParams } });
+    const data = await User.findAll({
+      limit,
+      offset: page,
+      attributes: ['id', 'username', 'firstName', 'middleName', 'lastName', 'email', 'avatar', 'billing', 'userPermission', 'active', 'facebookId', 'googleId'],
+      where: { ...whereParams },
+    });
     return data;
   } catch (error) {
-    error.message += 'error when try to select data\n';
+    error.message += '\n error when try to select data';
     throw error;
   }
 };
@@ -84,11 +87,17 @@ exports.getOneUser = async (data) => {
 
 exports.postUser = async (data) => {
   try {
+    const isExisted = await User.findOne(data);
+    if (isExisted) {
+      const error = new Error('this user already exist');
+      error.statusCode = 422;
+    }
     const postedUser = await User.create(data);
+    await userRoleService.postUserRole(postedUser.id, 3);
     return postedUser;
   } catch (error) {
-    error.statusCode = 500;
-    error.message += 'error when try to insert data\n';
+    error.statusCode = error.statusCode ? error.statusCode : 500;
+    error.message += ' \n error when try to insert data';
     throw error;
   }
 };
@@ -166,7 +175,7 @@ exports.saveUserFacebook = async (data) => {
         facebookId: data.id,
         active: true,
       };
-      const user = User.create(userData);
+      const user = this.postUser(userData);
       return user;
     }
     const userCheck = await User.findOne({ where: { email: data.email, facebookId: data.id } });
@@ -198,7 +207,7 @@ exports.saveUserGoogle = async (data) => {
         active: true,
         avatar: data.picture,
       };
-      const user = User.create(userData);
+      const user = this.postUser(userData);
       return user;
     }
     const userCheck = await User.findOne({ where: { email: data.email, googleId: data.sub } });

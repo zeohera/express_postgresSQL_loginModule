@@ -23,12 +23,11 @@ module.exports.reqOauth = async (req, res, next) => {
       callbackURL: callbackSecretUrl,
       profileFields: ['id', 'emails', 'name'],
     },
-    (accessToken, refreshToken, profile, cb) => {
-      console.log(`fb token \n${accessToken}`);
+    async (accessToken, refreshToken, profile, cb) => {
       // eslint-disable-next-line no-underscore-dangle
       const user = profile._json;
       try {
-        const userReturn = service.saveUserFacebook(user);
+        const userReturn = await service.saveUserFacebook(user);
         return cb(null, userReturn);
       } catch (error) {
         return cb(error, null);
@@ -45,22 +44,19 @@ module.exports.reqOauth = async (req, res, next) => {
 
 module.exports.handleSuccessRes = async (req, res, next) => {
   try {
-    req.user.then(async (data) => {
-      // console.log('data ne hehe', data);
-      const tokenInfo = {
-        username: data.dataValues.username,
-        userId: data.dataValues.id,
-      };
-      const refreshToken = tokenService.generateRefreshToken(tokenInfo);
-      const accessToken = tokenService.generateAccessToken(tokenInfo);
-      const tokenState = {
-        accessToken,
-        refreshToken,
-        userId: data.id,
-      };
-      await tokenService.postToken(tokenState);
-      res.status(200).json(tokenState);
-    });
+    const tokenInfo = {
+      username: req.user.dataValues.username,
+      userId: req.user.dataValues.id,
+    };
+    const refreshToken = tokenService.generateRefreshToken(tokenInfo);
+    const accessToken = tokenService.generateAccessToken(tokenInfo);
+    const tokenState = {
+      accessToken,
+      refreshToken,
+      userId: req.user.id,
+    };
+    await tokenService.postToken(tokenState);
+    res.status(200).json(tokenState);
   } catch (error) {
     error.statusCode = 401;
     console.error(error);

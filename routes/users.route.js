@@ -56,6 +56,9 @@ const ownerCheck = require('../middleware/auth/owner');
  *          id:
  *            type: string
  *            description: id người dùng
+ *          username:
+ *            type: string
+ *            description: username
  *          firstName:
  *            type: string
  *            description: tên
@@ -83,6 +86,9 @@ const ownerCheck = require('../middleware/auth/owner');
  *          facebookId:
  *            type: string
  *            description: id facebook người dùng
+ *          googleId:
+ *            type: string
+ *            description: id google người dùng
  */
 /**
  * @swagger
@@ -99,6 +105,27 @@ const ownerCheck = require('../middleware/auth/owner');
  *        - bearerAuth: []
  *      summary: get all user
  *      tags: [Users]
+ *      parameters:
+ *        - in: query
+ *          name: page
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: limit
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: type
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: billing
+ *          schema:
+ *            type: boolean
+ *        - in: query
+ *          name: authType
+ *          schema:
+ *            type: string
  *      responses:
  *        500:
  *          description: internal sever error
@@ -159,11 +186,7 @@ router.route('/')
  *        500:
  *          description: internal sever error
  *        200:
- *          description: user
- *          content:
- *            application/json:
- *              schema:
- *                $ref: '#/components/schemas/user'
+ *          description: user deleted
  *    patch:
  *      security:
  *        - bearerAuth: []

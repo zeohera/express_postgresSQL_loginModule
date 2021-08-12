@@ -1,3 +1,11 @@
+/* eslint-disable global-require */
+/* eslint-disable no-spaced-func */
+/* eslint-disable func-call-spacing */
+/* eslint-disable arrow-body-style */
+/* eslint-disable import/no-dynamic-require */
+/* eslint-disable no-path-concat */
+/* eslint-disable prefer-template */
+/* eslint-disable lines-around-directive */
 // eslint-disable-next-line strict
 'use strict';
 
@@ -30,11 +38,10 @@ fs.readdirSync(__dirname)
     );
   })
   .forEach((file) => {
-    const model = require(path.join(__dirname, file))
-      (
-        sequelize,
-        Sequelize.DataTypes,
-      );
+    const model = require(path.join(__dirname, file))(
+      sequelize,
+      Sequelize.DataTypes,
+    );
     db[model.name] = model;
   });
 
@@ -46,7 +53,7 @@ Object.keys(db).forEach((modelName) => {
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
-db.basename = basename
+db.basename = basename;
 db.connect = async () => {
   try {
     await sequelize.authenticate();

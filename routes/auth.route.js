@@ -59,6 +59,24 @@ const { validateEmail } = require('../middleware/validator/emailValidator');
  *            type: number
  *          state:
  *            type: number
+ *      userInfoSignupValidateFailed:
+ *        type: object
+ *        properties:
+ *          message:
+ *             type: string
+ *          data:
+ *            type: array
+ *            items:
+ *              type: object
+ *              properties:
+ *                value:
+ *                  type: string
+ *                msg:
+ *                  type: string
+ *                param:
+ *                  type: string
+ *                location:
+ *                  type: string
  *      userInfoSignup:
  *        type : object
  *        required:
@@ -92,8 +110,9 @@ const { validateEmail } = require('../middleware/validator/emailValidator');
  *            firstName: Bảo
  *            middleName: Chí
  *            lastName: Bùi
- *            gmail : buichibao1011@gmail.com
+ *            email : buichibao1011@gmail.com
  *            password : '111'
+ *            confirmPassword : '111'
  */
 
 /**
@@ -129,7 +148,9 @@ router.get('/google/secret', passport.authenticate('google', { session: false, s
  *              schema:
  *                $ref: '#/components/schemas/loginResponse'
  *        401:
- *          description: wrong username or password
+ *          description: username and password is wrong
+ *        500:
+ *          description: sever error
  */
 router.post('/', controller.login);
 
@@ -137,7 +158,7 @@ router.post('/', controller.login);
  * @swagger
  *  /auth/signup:
  *    post:
- *      summary: Login
+ *      summary: Sign up
  *      tags: [Auth]
  *      requestBody:
  *          descriptions: Sign up an user
@@ -146,10 +167,16 @@ router.post('/', controller.login);
  *              schema:
  *                $ref: '#/components/schemas/userInfoSignup'
  *      responses:
+ *        500:
+ *          description: sever error
  *        202:
  *          description: data saved
  *        422:
  *          description: Validation failed.
+ *          content:
+ *            application/json:
+ *              schema:
+ *                $ref: '#/components/schemas/userInfoSignupValidateFailed'
  */
 router.post('/signup', validate, controller.signup);
 
@@ -160,12 +187,12 @@ router.post('/signup', validate, controller.signup);
  *      tags: [Auth]
  *      summary: active account when signup with user and password
  *      parameters:
- *        - in: path
+ *        - in: query
  *          name: hash
  *          required: true
  *          schema:
  *            type: string
- *        - in: path
+ *        - in: query
  *          name: userId
  *          required: true
  *          schema:
@@ -199,7 +226,9 @@ router.get('/active', controller.activeAccount);
  *                  accessToken:
  *                    type: string
  *        401:
- *          description: wrong token
+ *          description: you need to provide refresh token
+ *        500:
+ *          description: sever error
  */
 router.get('/getToken', verityToken, controller.getToken);
 
@@ -212,10 +241,10 @@ router.get('/getToken', verityToken, controller.getToken);
  *      tags: [Auth]
  *      summary: logout user
  *      responses:
- *        204:
- *          description: logout
+ *        205:
+ *          description: logout successful
  *        500:
- *          description: local sever error
+ *          description: sever error
  */
 router.patch('/logout', verityToken, controller.logout);
 
@@ -241,6 +270,8 @@ router.patch('/logout', verityToken, controller.logout);
  *          description: email is not exist
  *        202:
  *          description: email sended
+ *        500:
+ *          description: sever error
  */
 router.post('/forgetPassword', validateEmail, controller.sendResetPasswordCode);
 
@@ -270,9 +301,16 @@ router.post('/forgetPassword', validateEmail, controller.sendResetPasswordCode);
  *              retypePassword:
  *                type: string
  *    responses:
+ *      400:
+ *        description: uuid not found
+ *      401:
+ *        description: wrong link or wrong secret code
+ *      422:
+ *        description: password and retypePassword not match
  *      204:
  *        description:your password reset success full
- *      500: internal sever error
+ *      500:
+ *        description: sever error
  */
 router.patch('/forgetPassword/:uuid', controller.resetPassword);
 

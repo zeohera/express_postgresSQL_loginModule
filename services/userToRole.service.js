@@ -1,25 +1,26 @@
 const { Op } = require('sequelize');
 const { sequelize, Sequelize } = require('../models');
-const UserRole = require('../models/usertorole')(sequelize, Sequelize);
+const UserRole = require('../models/UserToRole')(sequelize, Sequelize);
 
-exports.postUserRole = async (userId, role) => {
+exports.postUserRole = async (UserId, role) => {
   try {
     role = parseInt(role, 10);
-    const data = await UserRole.create({ userId, roleId: role });
+    const dataBefore = await UserRole.findOne({ where: { UserId, RoleId: role } });
+    if (dataBefore) return dataBefore;
+    const data = await UserRole.create({ UserId, RoleId: role });
     return data;
   } catch (error) {
-    error.message += 'error when create user role';
+    error.message += ' - error when create user role';
     throw error;
   }
 };
 
-exports.getUserOfRole = async (roleId) => {
+exports.getUserOfRole = async (RoleId) => {
   try {
-    roleId = parseInt(roleId, 10);
-    console.log('roleId', roleId);
-    const data = await UserRole.findAll({ attributes: ['userId'], where: { roleId: { [Op.eq]: roleId } } });
+    RoleId = parseInt(RoleId, 10);
+    const data = await UserRole.findAll({ attributes: ['UserId'], where: { RoleId: { [Op.eq]: RoleId } } });
     const typeArray = [];
-    data.map((item) => (typeArray.push(item.dataValues.userId)));
+    data.map((item) => (typeArray.push(item.dataValues.UserId)));
     return typeArray;
   } catch (error) {
     error.message += ' error when try to get user of role ';
