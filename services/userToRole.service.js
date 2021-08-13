@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { sequelize, Sequelize } = require('../models');
-const UserRole = require('../models/UserToRole')(sequelize, Sequelize);
+
+const UserRole = require('../models/usertorole')(sequelize, Sequelize);
 
 exports.postUserRole = async (UserId, role) => {
   try {
@@ -24,6 +25,20 @@ exports.getUserOfRole = async (RoleId) => {
     return typeArray;
   } catch (error) {
     error.message += ' error when try to get user of role ';
+    throw error;
+  }
+};
+
+exports.deleteRole = async (UserId, RoleId) => {
+  try {
+    if (RoleId) {
+      const result = await UserRole.destroy({ where: { UserId, RoleId } });
+      return result;
+    }
+    const result = await UserRole.destroy({ where: { UserId } });
+    return result;
+  } catch (error) {
+    error.message += ' - error when try to delete role';
     throw error;
   }
 };

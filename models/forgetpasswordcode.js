@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use strict';
 const {
   Model
@@ -10,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association heref
+      // define association here
     }
   };
   forgetPasswordCode.init({

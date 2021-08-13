@@ -55,12 +55,16 @@ exports.getUsers = async (page, limit, type, billing, authType) => {
     const data = await User.findAll({
       limit,
       offset: page,
-      attributes: ['id', 'username', 'firstName', 'middleName', 'lastName', 'email', 'avatar', 'billing', 'userPermission', 'active', 'facebookId', 'googleId'],
+      attributes: [
+        'id', 'username', 'firstName',
+        'middleName', 'lastName', 'email', 'avatar',
+        'billing', 'userPermission', 'active', 'facebookId', 'googleId'],
       where: { ...whereParams },
+      // include: [{ model: Role, as: 'UserToRoles' }],
     });
     return data;
   } catch (error) {
-    error.message += '\n error when try to select data';
+    error.message += ' - error when try to select data';
     throw error;
   }
 };
@@ -80,7 +84,7 @@ exports.getOneUser = async (data) => {
     }
     return data;
   } catch (error) {
-    error.message += '\n error when try to find data';
+    error.message += ' - error when try to find data';
     throw error;
   }
 };
@@ -97,7 +101,7 @@ exports.postUser = async (data) => {
     return postedUser;
   } catch (error) {
     error.statusCode = error.statusCode ? error.statusCode : 500;
-    error.message += ' \n error when try to insert data';
+    error.message += ' \n - error when try to insert data';
     throw error;
   }
 };
@@ -106,10 +110,11 @@ exports.deleteUser = async (id) => {
   try {
     // eslint-disable-next-line object-shorthand
     const deletedUser = await User.destroy({ where: { id: id } });
+    await userRoleService.deleteRole(id);
     return deletedUser;
   } catch (error) {
     error.statusCode = 500;
-    error.message += 'error when try to delete data\n';
+    error.message += ' - error when try to delete data \n';
     throw error;
   }
 };
@@ -131,7 +136,7 @@ exports.updateUser = async (param, data) => {
     return await User.findOne({ where: { [Op.or]: [{ username: param }, { email: param }] } });
   } catch (error) {
     error.statusCode = 500;
-    error.message += 'error when try to update data\n';
+    error.message += ' - error when try to update data \n';
     throw error;
   }
 };
@@ -185,7 +190,7 @@ exports.saveUserFacebook = async (data) => {
     const userReturn = await User.findOne({ where: { email: data.email } });
     return userReturn;
   } catch (error) {
-    error.message += 'can link facebook account';
+    error.message += ' - can link facebook account';
     console.error(error);
     return null;
   }
@@ -253,7 +258,7 @@ exports.checkLogin = async (username, iat) => {
     });
     return user;
   } catch (error) {
-    error.message += 'error when check login';
+    error.message += ' - error when check login';
     throw error;
   }
 };

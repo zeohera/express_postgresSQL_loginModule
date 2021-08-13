@@ -1,12 +1,4 @@
-/* eslint-disable global-require */
-/* eslint-disable no-spaced-func */
-/* eslint-disable func-call-spacing */
-/* eslint-disable arrow-body-style */
-/* eslint-disable import/no-dynamic-require */
-/* eslint-disable no-path-concat */
-/* eslint-disable prefer-template */
-/* eslint-disable lines-around-directive */
-// eslint-disable-next-line strict
+/* eslint-disable */
 'use strict';
 
 const fs = require('fs');
@@ -57,7 +49,8 @@ db.basename = basename;
 db.connect = async () => {
   try {
     await sequelize.authenticate();
-    await sequelize.sync();
+    // {force: false}
+    await sequelize.sync({ force: true });
     console.log('Connection has been established successfully.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);

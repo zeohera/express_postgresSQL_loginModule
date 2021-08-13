@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use strict';
 const {
   Model
@@ -11,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      
     }
   };
   roleToPermission.init({
@@ -18,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     roleId: { type: DataTypes.INTEGER, primaryKey: true },
   }, {
     sequelize,
+    paranoid: true,
     modelName: 'roleToPermission',
   });
   return roleToPermission;

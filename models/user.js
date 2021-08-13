@@ -1,5 +1,6 @@
-'use strict';
+/* eslint-disable no-unused-vars */
 const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     /**
@@ -9,24 +10,26 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      this.belongsToMany(models.Role, { through: 'UserToRoles', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+      models.User.belongsToMany(models.Role, {
+        through: 'UserToRoles', foreignKey: 'UserId', onDelete: 'CASCADE', onUpdate: 'CASCADE',
+      });
     }
   }
   User.init(
     {
-      username: { type: DataTypes.STRING, require: true, unique: true },
+      username: { type: DataTypes.STRING, require: true },
       password: { type: DataTypes.STRING, require: true },
       firstName: { type: DataTypes.STRING, require: true },
       middleName: { type: DataTypes.STRING, require: true },
       lastName: { type: DataTypes.STRING, require: true },
-      email: { type: DataTypes.STRING, require: true, unique: true },
+      email: { type: DataTypes.STRING, require: true },
       avatar: { type: DataTypes.STRING, require: false },
       billing: { type: DataTypes.BOOLEAN, require: true, defaultValue: true },
       userPermission: { type: DataTypes.STRING, require: true },
       passwordChangeAt: { type: DataTypes.DATE, require: false, defaultValue: DataTypes.NOW },
       active: { type: DataTypes.BOOLEAN, require: true, defaultValue: false },
-      facebookId: { type: DataTypes.STRING, require: false, unique: true },
-      googleId: { type: DataTypes.STRING, require: false, unique: true },
+      facebookId: { type: DataTypes.STRING, require: false },
+      googleId: { type: DataTypes.STRING, require: false },
     },
     {
       hooks: {
