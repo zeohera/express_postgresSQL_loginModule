@@ -1,6 +1,4 @@
 /* eslint-disable */
-'use strict';
-
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
@@ -15,7 +13,11 @@ if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
   sequelize = new Sequelize(
-    'postgres://mnbvqhdrnnzspq:636fa887cc96366759e6d3ecf3ddd029f94a9ce5cabeaa1f4d37aeceab105fe9@ec2-34-194-14-176.compute-1.amazonaws.com:5432/dorrhibgf7ll3'
+    config.database,
+    config.username,
+    config.password,
+    config,
+    { timezone: '+07:00' },
   );
 }
 
