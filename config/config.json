@@ -1,6 +1,10 @@
 {
   "production": {
-    "use_env_variable": "DATABASE_URL"
+    "use_env_variable": "DATABASE_URL",
+    "native": true,
+    "ssl": {
+      "rejectUnauthorized": false
+    }
   },
   "heroku": {
     "username": "koihyqisnfuerp",

@@ -10,7 +10,10 @@ const db = {};
 
 let sequelize;
 if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+  const link = process.env[config.use_env_variable]+ '?sslmode=require'
+  console.log('link : ', link)
+  sequelize = new Sequelize(link, config);
+  console.log('sequelize alckfjir:\n', sequelize)
 } else {
   sequelize = new Sequelize(
     config.database,
