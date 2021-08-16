@@ -5,7 +5,8 @@
     "database": "dorrhibgf7ll3",
     "host": "ec2-34-194-14-176.compute-1.amazonaws.com",
     "dialect": "postgres",
-    "timezone": "+07:00"
+    "timezone": "+07:00",
+    "port": 5432
   },
   "development": {
     "username": "postgres",
@@ -13,14 +14,16 @@
     "database": "loginModule_dev",
     "host": "127.0.0.1",
     "dialect": "postgres",
-    "timezone": "+07:00"
+    "timezone": "+07:00",
+    "port": 5432
   },
   "test": {
     "username": "root",
     "password": null,
     "database": "loginModule_test",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "port": 5432
   },
   "production": {
     "username": "postgres",
@@ -29,6 +32,7 @@
     "host": "127.0.0.1",
     "dialect": "postgres",
     "timezone": "+07:00",
-    "use_env_variable": "DATABASE_URL"
+    "use_env_variable": "DATABASE_URL",
+    "port": 5432
   }
 }
