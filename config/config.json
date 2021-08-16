@@ -28,12 +28,6 @@
     "port": 5432
   },
   "test": {
-    "username": "postgres",
-    "password": "101120",
-    "database": "loginModule_dev",
-    "host": "127.0.0.1",
-    "dialect": "postgres",
-    "timezone": "+07:00",
-    "port": 5432
+    "use_env_variable": "postgres://mnbvqhdrnnzspq:636fa887cc96366759e6d3ecf3ddd029f94a9ce5cabeaa1f4d37aeceab105fe9@ec2-34-194-14-176.compute-1.amazonaws.com:5432/dorrhibgf7ll3"
   }
 }
