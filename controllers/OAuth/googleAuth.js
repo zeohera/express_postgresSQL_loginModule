@@ -14,25 +14,24 @@ function fullUrl(req, pathname, queryObj) {
   });
 }
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: 'http://localhost:3000/auth/google/secret',
-},
-async (accessToken, refreshToken, profile, cb) => {
-  // eslint-disable-next-line no-underscore-dangle
-  const user = profile._json;
-  try {
-    const userReturn = await service.saveUserGoogle(user);
-    return cb(null, userReturn);
-  } catch (error) {
-    return cb(error, null);
-  }
-}));
-
 module.exports.reqOauth = async (req, res, next) => {
   try {
     const callbackSecretUrl = fullUrl(req, 'auth/google/secret');
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: callbackSecretUrl,
+    },
+    async (accessToken, refreshToken, profile, cb) => {
+      // eslint-disable-next-line no-underscore-dangle
+      const user = profile._json;
+      try {
+        const userReturn = await service.saveUserGoogle(user);
+        return cb(null, userReturn);
+      } catch (error) {
+        return cb(error, null);
+      }
+    }));
     passport.authenticate('google');
     res.status(100).redirect(callbackSecretUrl);
   } catch (error) {
