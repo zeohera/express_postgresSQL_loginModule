@@ -1,5 +1,6 @@
 'use strict';
 const { Model } = require('sequelize');
+const { role, user } = require('./index');
 
 module.exports = (sequelize, DataTypes) => {
   class UserToRole extends Model {
@@ -12,11 +13,25 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   UserToRole.init({
-    RoleId: { type: DataTypes.INTEGER, primaryKey: true },
-    UserId: { type: DataTypes.INTEGER, primaryKey: true },
+    RoleId: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      references: {
+        model: role,
+        key: 'id',
+      },
+    },
+    UserId: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      references: {
+        model: user,
+        key: 'id',
+      },
+    },
   }, {
     sequelize,
-    modelName: 'UserToRoles',
+    modelName: 'user_role',
   });
   return UserToRole;
 };

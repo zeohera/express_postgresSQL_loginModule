@@ -10,8 +10,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.User.belongsToMany(models.Role, {
-        through: 'UserToRoles', foreignKey: 'UserId', onDelete: 'CASCADE', onUpdate: 'CASCADE',
+      models.user.belongsToMany(models.role, {
+        as: 'user_as', through: 'user_role', foreignKey: 'UserId', onDelete: 'CASCADE', onUpdate: 'CASCADE',
       });
     }
   }
@@ -45,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       sequelize,
       paranoid: true,
-      modelName: 'User',
+      modelName: 'user',
     },
   );
   return User;

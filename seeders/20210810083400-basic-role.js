@@ -15,7 +15,7 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    return queryInterface.bulkInsert('Roles', [
+    return queryInterface.bulkInsert('roles', [
       {
         name: 'owner',
         description: 'project owner',

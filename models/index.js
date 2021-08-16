@@ -42,18 +42,19 @@ Object.keys(db).forEach((modelName) => {
     db[modelName].associate(db);
   }
 });
-
+// console.log('sequelize unzip1', sequelize)
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 db.basename = basename;
 db.connect = async () => {
   try {
-    await sequelize.authenticate();
+    await db.sequelize.authenticate();
     // {force: false}
-    await sequelize.sync({ force: true });
-    console.log('Connection has been established successfully.');
+    await db.sequelize.sync({force: false});
+    console.log('Connection has been established successfully .');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }
 };
+console.log('db\n',db.sequelize.models)
 module.exports = db;

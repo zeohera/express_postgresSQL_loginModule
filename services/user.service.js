@@ -5,6 +5,7 @@ const {
 } = require('unique-names-generator');
 
 const { sequelize, Sequelize } = require('../models');
+
 const User = require('../models/user')(sequelize, Sequelize);
 const userRoleService = require('./userToRole.service');
 
@@ -60,7 +61,7 @@ exports.getUsers = async (page, limit, type, billing, authType) => {
         'middleName', 'lastName', 'email', 'avatar',
         'billing', 'userPermission', 'active', 'facebookId', 'googleId'],
       where: { ...whereParams },
-      // include: [{ model: Role, as: 'UserToRoles' }],
+      // include: [{ model: db.sequelize.models.role, as: 'role_as', required: true }],
     });
     return data;
   } catch (error) {
@@ -76,6 +77,7 @@ exports.getOneUser = async (data) => {
         where: {
           id: data,
         },
+        // include: Role,
       });
     } else {
       data = await User.findOne({
@@ -97,7 +99,9 @@ exports.postUser = async (data) => {
       error.statusCode = 422;
     }
     const postedUser = await User.create(data);
+    console.log('postedUser', postedUser);
     await userRoleService.postUserRole(postedUser.id, 3);
+    // await postedUser.addRoles(postedRoleTest);
     return postedUser;
   } catch (error) {
     error.statusCode = error.statusCode ? error.statusCode : 500;

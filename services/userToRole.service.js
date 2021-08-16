@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
-const { sequelize, Sequelize } = require('../models');
+const db = require('../models');
 
-const UserRole = require('../models/usertorole')(sequelize, Sequelize);
+const UserRole = db.sequelize.models.user_role;
 
 exports.postUserRole = async (UserId, role) => {
   try {

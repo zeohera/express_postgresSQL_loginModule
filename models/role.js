@@ -11,8 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.Role.belongsToMany(models.User, {
-        through: 'UserToRoles', foreignKey: 'RoleId', onDelete: 'CASCADE', onUpdate: 'CASCADE',
+      models.role.belongsToMany(models.user, {
+        through: 'user_role', foreignKey: 'RoleId', onDelete: 'CASCADE', onUpdate: 'CASCADE', as: 'role_as'
       });
     }
   }
@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.STRING,
   }, {
     sequelize,
-    modelName: 'Role',
+    modelName: 'role',
     timestamps: false,
   });
   return Role;
