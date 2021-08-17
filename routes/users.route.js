@@ -152,7 +152,7 @@ router.route('/')
  *    get:
  *      security:
  *        - bearerAuth: []
- *      summary: get all user
+ *      summary: get one user
  *      tags: [Users]
  *      parameters:
  *        - in: path
