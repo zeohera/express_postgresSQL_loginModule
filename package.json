@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "npx sequelize db:seed --seed 20210810083400-basic-role.js && nodemon ./bin/www",
+    "start": "nodemon ./bin/www",
     "dev": "nodemon ./bin/www",
     "lint": "npx eslint --ext .js --ignore-path .gitignore ."
   },

@@ -2,9 +2,16 @@
   "production": {
     "use_env_variable": "DATABASE_URL",
     "native": true,
-    "ssl": {
-      "rejectUnauthorized": false
-    }
+    "dialect": "postgres",
+    "native": false,
+    "ssl": true,
+    "protocol": "postgres",
+    "dialectOptions": {
+      "ssl": {
+          "require": true,
+          "rejectUnauthorized": false
+      }
+  }
   },
   "heroku": {
     "username": "koihyqisnfuerp",

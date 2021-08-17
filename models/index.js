@@ -22,6 +22,7 @@ if (config.use_env_variable) {
     config,
     { timezone: '+07:00' },
   );
+  console.log('sequelize chibao:\n', sequelize)
 }
 
 fs.readdirSync(__dirname)
@@ -49,9 +50,9 @@ db.Sequelize = Sequelize;
 db.basename = basename;
 db.connect = async () => {
   try {
+    await db.sequelize.sync({force: false});
     await db.sequelize.authenticate();
     // {force: false}
-    await db.sequelize.sync({force: false});
     console.log('Connection has been established successfully .');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
