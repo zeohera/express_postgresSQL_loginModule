@@ -21,9 +21,9 @@ const verifyToken = require('../middleware/auth/isAuth');
  *        500:
  *          description: internal sever error
  *        400:
- *          description: error when get users
+ *          description: error when get role
  *        200:
- *          description: get all user data
+ *          description: all role data
  */
 router.get('/', verifyToken, controller.getAllRole);
 module.exports = router;

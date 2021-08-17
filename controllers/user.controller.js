@@ -137,7 +137,7 @@ module.exports.changePassword = async (req, res, next) => {
     const userIdParam = req.params.id;
     if (userId !== userIdParam) {
       const error = new Error('you can not change other user\'s password');
-      error.statusCode(401);
+      error.statusCode = 401;
       throw error;
     }
     if (newPassword.localeCompare(retypePassword) !== 0) {
