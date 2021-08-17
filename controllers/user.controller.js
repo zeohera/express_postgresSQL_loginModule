@@ -133,8 +133,11 @@ module.exports.changePassword = async (req, res, next) => {
       newPassword,
       retypePassword,
     } = req.body;
-    const { userId } = req.decodedJWT;
-    const userIdParam = req.params.id;
+    let { userId } = req.decodedJWT;
+    let userIdParam = req.params.id;
+    userId = parseInt(userId, 10);
+    userIdParam = parseInt(userIdParam, 10);
+    console.log(userId, userIdParam);
     if (userId !== userIdParam) {
       const error = new Error('you can not change other user\'s password');
       error.statusCode = 401;

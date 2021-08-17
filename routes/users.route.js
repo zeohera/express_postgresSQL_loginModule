@@ -275,10 +275,6 @@ router.patch('/:id/firstPassword', verifyToken, ownerCheck, controller.addPasswo
  *          description: internal sever error
  *        204:
  *          description: user
- *          content:
- *            application/json:
- *              schema:
- *                $ref: '#/components/schemas/user'
  */
 router.patch('/:id/changePassword', verifyToken, ownerCheck, controller.changePassword);
 
