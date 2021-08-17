@@ -13,6 +13,7 @@ const db = require('./models/index');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users.route');
 const authRouter = require('./routes/auth.route');
+const roleRouter = require('./routes/role.route');
 
 const options = {
   definition: {
@@ -50,6 +51,7 @@ app.use(passport.initialize());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/auth', authRouter);
+app.use('/roles', roleRouter);
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
 
 // catch 404 and forward to error handler

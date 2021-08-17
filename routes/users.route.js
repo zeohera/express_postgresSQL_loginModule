@@ -116,6 +116,7 @@ const ownerCheck = require('../middleware/auth/owner');
  *            type: number
  *        - in: query
  *          name: type
+ *          description: find who is admin , who is guest, try 1(owner) / 3(member) to see this work
  *          schema:
  *            type: number
  *        - in: query
@@ -124,6 +125,7 @@ const ownerCheck = require('../middleware/auth/owner');
  *            type: boolean
  *        - in: query
  *          name: authType
+ *          description: try SSO, default, (2FA (not implement))
  *          schema:
  *            type: string
  *      responses:
